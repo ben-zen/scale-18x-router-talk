@@ -13,9 +13,43 @@ today, in fact, they basically don't exist. That's a huge bummer for me, and
 caused me to start looking for other options.
 
 ** Limitations
-For a lot of the equipment I've found
+
+*** Random failures
+    Be it ARP table overflows, memory leaks, overheating, or poor antenna
+    performance, I've just not had good luck with consumer routers.
+
+*** Software stack
+    Weak configuration options-often limited to port forwarding or sticking a
+    machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 
 ** Goals
+
+*** Be upgradeable
+    While inexpensive, consumer routers are often extremely limited; if you look
+    at the OpenWRT wiki, there's an entire warning about 4/32 devices, which
+    have only 4MB of RAM and 32MB of flash storage; these devices can barely fit
+    their firmware when they're shipped out, let alone run extra tools! By using
+    commodity desktop hardware, we can swap out components, such as adding
+    higher-bandwidth NICs (10GbE hardware is pretty inexpensive now) or other
+    specialized additions.
+
+*** Be easy to manage
+
+**** Familiar network analysis tools
+     Instead of trying to figure out what strange configuration is present, or
+     divine what IP address has gotten assigned, all of your familiar command
+     line tools, like src_sh{ip addr} or src_sh{ip route} are there, close at
+     hand.
+
+*** Be a test bed for exploring network ideas
+    A full operating system on your router offers you lots of opportunities to
+    try out different tools or technologies
+
+**** Docker containers on your router
+     I host my Unifi Controller on my router as a Docker container, which avoids
+     using a separate physical device
+
+**** Logging or traffic analysis
 
 * Selecting hardware
 
@@ -41,11 +75,21 @@ For a lot of the equipment I've found
     you want other machines directly connected to your router, however, you'll
     need more.
 
+    A key point with NIC selection is driver support.
+
 ** Approaches
+
+*** Pre-built
+
+*** Small Form Factor
+
+*** Rackmount
 
 ** Considerations for expandability
 
 * Software stack
+
+** Decide what matters to you
 
 ** Axes of choice
 
@@ -66,3 +110,59 @@ For a lot of the equipment I've found
     derivatives; generally speaking, there's also community support available,
     but you may or may not find what you need in forums, especially when dealing
     with unusual hardware or network configurations.
+
+* Configuring a router
+
+** Installing the OS
+
+** Configuring IPv4 routing
+
+*** The ~/proc/sys/net~ filesystem
+
+** Configuring IPv6 routing (Optional, recommended?)
+
+*** SLAAC and PD-assigned address
+
+**** accept_ra and the tri-state boolean
+From [[https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt][ip-sysctl.txt]] in the Linux kernel documentation,
+#+BEGIN_QUOTE
+Possible values are:
+    0 Do not accept Router Advertisements.
+    1 Accept Router Advertisements if forwarding is disabled.
+    2 Overrule forwarding behaviour. Accept Router Advertisements
+      even if forwarding is enabled.
+#+END_QUOTE
+
+Note that this means we'll want to set ~accept_ra~ to ~2~ /specifically/ on our
+WAN interface for IPv6 support.
+
+*** 6to4 tunnel (Hurricane Electric)
+
+** Configuring firewall rules
+
+*** nftables versus frontends
+
+*** Don't block ICMPv6!
+    It's hard to stress this enough. Blocking ICMPv6 is a great way to destroy 
+
+*** Forwarding
+
+** Throughput considerations
+
+*** Jumbo Frames
+
+* Other configurations
+
+** Virtualized firewall
+
+*** Why
+
+*** How
+
+*** Issues you might run into
+
+**** Drivers and PCIe Passthrough
+
+** Multiple firewalls
+   Seen as a "defense in depth" strategy, this takes the medieval walled city
+   approach to network design. Here, we have 
