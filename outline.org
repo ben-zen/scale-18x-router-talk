@@ -17,10 +17,20 @@ caused me to start looking for other options.
 *** Random failures
     Be it ARP table overflows, memory leaks, overheating, or poor antenna
     performance, I've just not had good luck with consumer routers.
-
+    
 *** Software stack
     Weak configuration options-often limited to port forwarding or sticking a
     machine in a DMZ-and minimal firewall options beyond simply providing NAT.
+
+*** Security vulnerabilities
+[[https://gist.github.com/nstarke/a611a19aab433555e91c656fe1f030a9][Netgear's routerlogin.net private cert]] was found to have been leaked /while I
+was writing this talk/ and that's far from the only security issue we've
+seen. There are insecure default settings on so many routers, and they often
+support management protocols which are also inherently insecure; even in more
+enterprise equipment such as Mikrotik, there's been significant issues with
+their Winbox protocol. It could be mitigated by limiting ports and proper
+configuration, but again, we're in the realm of insecure by default
+configurations.
 
 ** Goals
 
@@ -49,6 +59,9 @@ caused me to start looking for other options.
      I host my Unifi Controller on my router as a Docker container, which avoids
      using a separate physical device
 
+**** Dynamic DNS
+
+**** A little home website
 **** Logging or traffic analysis
 
 * Selecting hardware
@@ -57,7 +70,8 @@ caused me to start looking for other options.
 
 *** RAM
     4GB of RAM is more than enough for a basic firewall; if you want to add more
-    services, however, you'll want more.
+    services, however, you'll want more. Once you start considering
+    virtualization, 16 or 32 might be needed or useful.
 
 *** CPU
     Any recent CPU will be powerful enough--here your concerns are cost and
@@ -75,7 +89,13 @@ caused me to start looking for other options.
     you want other machines directly connected to your router, however, you'll
     need more.
 
-    A key point with NIC selection is driver support.
+    A key point with NIC selection is driver support; depending on your OS
+    choice, you may be more or less limited here! I recommend picking your NIC
+    in conjunction with your OS or after-so you can confirm what support you'll
+    have. If you're only going to need the on-board NICs on your motherboard, a
+    separate PCIe card might not be necessary, but for 10GbE or other protocols,
+    an add-in is almost certainly required. Intel's chipsets are popular, as are
+    Broadcom, Chelsio, and Mellanox.
 
 ** Approaches
 
@@ -112,12 +132,31 @@ caused me to start looking for other options.
     with unusual hardware or network configurations.
 
 * Configuring a router
-
+  For our demo here, I'm going to use Fedora, and I'm going to configure it with
+  very low-level tools, to highlight fine details that other systems might replace.
 ** Installing the OS
 
 ** Configuring IPv4 routing
 
-*** The ~/proc/sys/net~ filesystem
+*** The ~/proc/sys/net~ filesystem and ~/etc/sysctl.d~
+    This filesystem will tell you a lot about the configuration of your network,
+    and the files in ~/etc/sysctl.d~ will set values at boot which can also be
+    dynamically configured; files in this folder are read in sort order, which
+    is why files are usually prefixed with a number denoting importance, low to
+    high. An example of a line in one of these config files is as follows:
+#+BEGIN_SRC
+net.ipv4.conf.all.log_martians = TRUE
+#+END_SRC
+
+This line sets ~/proc/sys/net/ipv4/conf/all/log_martians~ to ~TRUE~; that will
+log any and all impossible addresses received by the machine to the kernel
+log. This could be useful if you're seeing a lot of unrouteable traffic on your
+network, for instance.
+
+**** ~forwarding~
+For every interface that's going to be routing traffic, you'll want to enable
+this value. It's ~0~ for non-forwarding interfaces, and anything else for
+forwarding interfaces. I'd probably just set it to ~1~.     
 
 ** Configuring IPv6 routing (Optional, recommended?)
 
@@ -141,22 +180,45 @@ WAN interface for IPv6 support.
 ** Configuring firewall rules
 
 *** nftables versus frontends
+Not really a "versus" here, but configuring nftables directly instead of using a
+frontend is a viable path, and if you have custom logic for null-routing
+specific IPs, you might want to have your own custom tooling writing your ~.nft~
+files and applying them. For this talk, we'll use firewalld. It's close to the
+same syntax, but has some nice-to-have details like port numbers having service
+names.
 
 *** Don't block ICMPv6!
-    It's hard to stress this enough. Blocking ICMPv6 is a great way to destroy 
+    It's hard to stress this enough. Blocking ICMPv6 is a great way to cause
+    arbitrary, difficult-to-diagnose slowdowns if you have IPv6 support
+    enabled. This isn't going to improve your security posture, SLAAC with
+    security extensions will handle that.
 
-*** Forwarding
+*** Forwarding and NAT
+
+**** masquerade for IPv4
 
 ** Throughput considerations
 
 *** Jumbo Frames
+The standard MTU is 1500B; this is fine in a reasonably fast network, but does
+have a not-insignificant amount of overhead. That MTU includes the IP header,
+after all, and especially on an IPv6 network, that can be quite large. On modern
+hardware, there's really no problem with a 9000B MTU, and that's what I
+recommend for standard configurations.
+
+*** TCP offload
+An interesting technology but not widely supported; the primary vendor who's
+pushing for this tech is Chelsio; they've [[https://lwn.net/Articles/148697/][attempted in the past]] to get offload
+support built into the Linux kernel, but were rebuked on the grounds that this
+moves kernel decisions into a black box; we may yet see some changes in this
+attitude, but it is generally outside the scope of this talk.
 
 * Other configurations
 
 ** Virtualized firewall
 
 *** Why
-
+A common approach to securing 
 *** How
 
 *** Issues you might run into
@@ -165,4 +227,9 @@ WAN interface for IPv6 support.
 
 ** Multiple firewalls
    Seen as a "defense in depth" strategy, this takes the medieval walled city
-   approach to network design. Here, we have 
+   approach to network design. Here, we have potentially two levels of network;
+   we might want to keep "soft hosts"--personal computers, other relatively
+   unsecured systems--behind a more restricted firewall, while still allowing
+   machines operating as servers to have a more porous environment to work
+   in--potentially with other untrusted devices there as well (such as IoT
+   devices).
