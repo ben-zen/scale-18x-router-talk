@@ -1,18 +1,37 @@
-#+TITLE: Beyond Two Cans and a String: A practical guide to building a router
+#+TITLE: Beyond Two Cans and a String
 #+AUTHOR: Ben Lewis
+#+EMAIL: zenrider@blacklodgeresearch.org
+#+DATE: \today
+#+startup: beamer
+#+LATEX_CLASS: beamer
+#+LATEX_CLASS_OPTIONS: [bigger]
+#+BEAMER_THEME: Hannover
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+OPTIONS: H:2
+#+DESCRIPTION: You can build a router with the things you have at home, like
+#+DESCRIPTION: a spare computer. This talk will cover the choices available to
+#+DESCRIPTION: the home sysadmin, and help guide your homelab decision making.
+#+KEYWORDS:
+#+SUBTITLE: A practical guide to building a router
+#+LATEX_COMPILER: pdflatex
+
+
 
 * Consumer routers bore me
 
 ** Background
-I like to manage my equipment via command lines and SSH; it means I have a
-uniform interface when dealing with machines all over the place, and I can use
-it from pretty much anywhere-even my phone.
+
+I'm an unabashed text console enthusiast. I like to manage my equipment via
+command lines and SSH; it means I have a uniform interface when dealing with
+machines all over the place, and I can use it from pretty much anywhere-even my
+phone.
 
 But command line interfaces just aren't common on most consumer equipment sold
 today, in fact, they basically don't exist. That's a huge bummer for me, and
 caused me to start looking for other options.
 
-** Limitations
+** Limitations of consumer hardware
 
 *** Random failures
     Be it ARP table overflows, memory leaks, overheating, or poor antenna
@@ -23,16 +42,23 @@ caused me to start looking for other options.
     machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 
 *** Security vulnerabilities
+
+**** Insecure default passwords and configurations
+There are insecure default settings on so many routers, and they often
+support management protocols which are also inherently insecure.
+
+**** Out-of-date protocols
+
+***** WPAv3
+***** TLS 1.3
+***** Certificate standards (deprecation of RSA-1)
+
+**** Netgear routerlogin.net private cert
 [[https://gist.github.com/nstarke/a611a19aab433555e91c656fe1f030a9][Netgear's routerlogin.net private cert]] was found to have been leaked /while I
 was writing this talk/ and that's far from the only security issue we've
-seen. There are insecure default settings on so many routers, and they often
-support management protocols which are also inherently insecure; even in more
-enterprise equipment such as Mikrotik, there's been significant issues with
-their Winbox protocol. It could be mitigated by limiting ports and proper
-configuration, but again, we're in the realm of insecure by default
-configurations.
+seen.
 
-** Goals
+** Goals for our router
 
 *** Be upgradeable
     While inexpensive, consumer routers are often extremely limited; if you look
@@ -66,7 +92,7 @@ configurations.
 
 * Selecting hardware
 
-** Constraints
+** Constraints or parameters
 
 *** RAM
     4GB of RAM is more than enough for a basic firewall; if you want to add more
@@ -89,13 +115,21 @@ configurations.
     you want other machines directly connected to your router, however, you'll
     need more.
 
-    A key point with NIC selection is driver support; depending on your OS
-    choice, you may be more or less limited here! I recommend picking your NIC
-    in conjunction with your OS or after-so you can confirm what support you'll
-    have. If you're only going to need the on-board NICs on your motherboard, a
-    separate PCIe card might not be necessary, but for 10GbE or other protocols,
-    an add-in is almost certainly required. Intel's chipsets are popular, as are
-    Broadcom, Chelsio, and Mellanox.
+   
+**** Onboard, on-motherboard NICs
+Assuming your motherboard has at least two NICs, you can forego all of the
+complexity and just use those devices.
+
+**** PCIe card NIC
+If you want to do a little more than the motherboard can support directly,
+either in capacity or speed (or both!) an add-in card might be a good
+choice. With a PCIe card, you can get SFP+ ports and full 10GbE speeds.
+
+**** Drivers a consideration
+A key point with NIC selection is driver support; depending on your OS choice,
+you may be more or less limited here! I recommend picking your NIC in
+conjunction with your OS or after-so you can confirm what support you'll
+have.
 
 ** Approaches
 
@@ -218,12 +252,65 @@ attitude, but it is generally outside the scope of this talk.
 ** Virtualized firewall
 
 *** Why
-A common approach to securing 
+
+**** Reducing risk from compromise
+Being the gateway device that has the most internet-facing surface area, your
+firewall is a prime target for attack.
+By running the firewall as a virtual
+machine instead of as th
+
+**** Virtual firewall for virtual machines
+A common approach to securing multiple virtual services is to run a firewall VM
+and have it act as the gateway for all of your virtual machines, instead of
+having the host also operate as the gateway; this approach allows you to have
+hidden services inside the network you've created, and treat your virtual
+network as you would a physical network.
+
+**** Quick update/deployment
+
+Updates to a virtual machine, depending on the approach, can be applied
+extremely quickly and with little downtime.
+
 *** How
+
+**** Pick your OS
+Basically all the questions we asked above apply twice, now; we need to
+determine how much physical RAM our VM host needs, and of that amount, how much
+the VM needs. A multi-core processor, and preferably with a lot of cores, is
+essential.
+
+**** Connect your VM to the network
+
+***** Bridging a physical NIC
+One common approach is to connect the VM to one of the host machine's NICs
+through a sort of bridge.
+
+****** Linux Bridge interface
+One option is to make your host also route packets, although this might be said
+to defeat the purpose of the firewall here.
+
+****** [[https://en.wikipedia.org/wiki/Promiscuous_mode][Promiscuous Mode NIC]]
+In this mode the NIC passes all packets it receives to the kernel, which means
+it can respond to multiple MAC addresses if the host(s) so choose; this is a
+common approach to allow one or multiple VMs to share a network connection with
+a host.
+
+***** PCIe Passthrough NIC
+For my virtual firewall setup, i've opted to dedicate an entire physical card
+with multiple ports to the firewall, and thereby made my VM host indirectly
+connected to the main network. To achieve this I ended up adding an instruction
+to load ~pcistub~ as the driver for a specific device to the kernel command
+line.
 
 *** Issues you might run into
 
 **** Drivers and PCIe Passthrough
+
+**** Virtual bridged network
+If you're using ~virsh~ to establish your networks, for a virtual network where
+the firewall VM is the gateway, you'll need to specify how all your VMs attach
+to it by configuring the network in their XML config to not have a forwarding
+entry.
 
 ** Multiple firewalls
    Seen as a "defense in depth" strategy, this takes the medieval walled city
@@ -233,3 +320,11 @@ A common approach to securing
    machines operating as servers to have a more porous environment to work
    in--potentially with other untrusted devices there as well (such as IoT
    devices).
+
+* Lab
+
+Let's build a router real quick!
+
+Set up a virtual firewall for other virtual hosts (mayyybe?)
+
+For the purposes of this 
