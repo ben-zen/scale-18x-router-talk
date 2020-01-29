@@ -91,7 +91,11 @@ seen.
 **** Logging or traffic analysis
 
 * Selecting hardware
-
+  I'm starting with hardware selection, but really both hardware and software
+  have to be considered in tandem, since one will inform the other. This may
+  evolve as you build your system, too! Maybe you decide that one approach isn't
+  working for you after you've done some basic setup. That's okay. Just remember
+  to take notes and log your progress.
 ** Constraints or parameters
 
 *** RAM
@@ -108,22 +112,32 @@ seen.
     120GB SSDs are $20 or less on Newegg; a lot of boards designed for a usecase
     like this are also built to be booted off of flash drives or SD cards.
 
+**** Extra capacity
+     If you're interested in doing more edge computing on your router-logging,
+     traffic shaping, running an HTTP server for a personal website (why not?)
+     you might want additional storage. This doesn't need to be an SSD, spinning
+     platters will do fine.
+
 *** NICs
     This is the heart of choosing what you'll use as a router; at a minimum, you
     need two interfaces: one external, one internal. If you've got a separate
     switch you're using for your internal network, that may be all you need; if
     you want other machines directly connected to your router, however, you'll
     need more.
-
    
 **** Onboard, on-motherboard NICs
-Assuming your motherboard has at least two NICs, you can forego all of the
-complexity and just use those devices.
+     Assuming your motherboard has at least two NICs, you can forego all of the
+     complexity and just use those devices.
 
 **** PCIe card NIC
 If you want to do a little more than the motherboard can support directly,
 either in capacity or speed (or both!) an add-in card might be a good
 choice. With a PCIe card, you can get SFP+ ports and full 10GbE speeds.
+
+One issue I've encountered is, if you install an expansion card NIC, some
+motherboard firmwares will disable the onboard NIC by default. You may want
+that! In my case, I really didn't. So, if your NIC suddenly doesn't work when
+you install an additional one, you should look for this in the BIOS/EFI.
 
 **** Drivers a consideration
 A key point with NIC selection is driver support; depending on your OS choice,
@@ -131,15 +145,81 @@ you may be more or less limited here! I recommend picking your NIC in
 conjunction with your OS or after-so you can confirm what support you'll
 have.
 
+**** Link Aggregation/Bonding and VLANs
+     You may encounter a situation where you want the core components of your
+     network to be on one subnet, and to have client devices on another; if
+     you've got a switch that can allocate ports to VLANs, then you can use one
+     larger, more capable switch to handle multiple subnets in parallel-but that
+     does require that your drivers support multiple VLANs on the same
+     connection, otherwise you'll need a separate connection from the router for
+     each subnet.
+
+**** Initial capacity requirement
+     When choosing a NIC for your build, you should keep your throughput
+     requirements in mind; if you host a media server inside your network, you
+     may want to have higher throughput on your LAN connection than your
+     WAN. Just try to keep your upstream and downstream in excess of what you'll
+     need for your connection.
+
 ** Approaches
 
 *** Pre-built
+    Often slightly more expensive, but featureful systems. When looking at
+    prebuilt equipment that runs pfSense or other similar firewall-oriented
+    operating systems, you'll see purpose-built, but closer to commodity
+    hardware than if buying from a vendor who builds a custom router OS like
+    Ubiquiti or MikroTik.
+
+**** QNAP
+     Mostly a NAS vendor, they have some switches and network equipment,
+     including what they call a [[https://www.qnap.com/en/product/qgd-1600p][smart edge switch]], which looks a lot like what
+     we're describing here.
+
+**** Netgate firewalls
+     Ship with a pfSense license, this is great if you want an integrated
+     solution.
 
 *** Small Form Factor
 
+**** Standard desktop box
+     Any relatively recent SFF desktop will do, as long as you can install the
+     parts you want to use in it!
+
+**** PCEngines APU units
+     Useful boards for custom installations; if you're very space constrained or
+     have limited need for expandability, this might be a good choice.
+     
 *** Rackmount
 
+**** Build your own
+     Order parts from Supermicro, Tyan, other vendors, and build yourself a box!
+     This is a more expensive route, but can be very rewarding.
+
+**** Buy used
+     There's plenty of 1U servers with fantastic loadouts available for
+     relatively low prices. A manufacturer I was recently introduced to is HYVE,
+     who have some really cute boxes.
+
 ** Considerations for expandability
+
+*** Future network standards
+
+**** Gigabit now, what next?
+10 Gigabit hardware is getting really inexpensive! If you've got 8 PCIe gen 2
+lanes available, you can have a dual SFP+ card.
+**** Wireless upgrades
+If you get a wireless card that can run in AP mode, you can use your router as
+your access point-and even trade out parts to upgrade to new standards as they
+become available.
+*** Additional different hardware
+**** Tensorflow PCIe!
+You can use Tensorflow in hardware now, relatively cheaply. They're [[https://www.mouser.com/ProductDetail/Coral/G650-04527-01?qs=sGAEpiMZZMsG1k5vdNM%252Fcyg9iDc%25252Bz9JYkOSrS1TKoVU%253D][$35 at
+Mouser.]] What would I do with these? I have no idea yet! But if you wanted to use
+some tool like greylog to capture logs, you could run an ML model analysis on
+it, and do so more efficiently.
+**** TPU - the security one
+Unfortunately TPU is now an overloaded term, but this device can be used to help
+speed up security computations, and work as a HWRNG.
 
 * Software stack
 
@@ -167,7 +247,8 @@ have.
 
 * Configuring a router
   For our demo here, I'm going to use Fedora, and I'm going to configure it with
-  very low-level tools, to highlight fine details that other systems might replace.
+  very low-level tools, to highlight fine details that other systems might gloss
+  over.
 ** Installing the OS
 
 ** Configuring IPv4 routing
@@ -191,6 +272,21 @@ network, for instance.
 For every interface that's going to be routing traffic, you'll want to enable
 this value. It's ~0~ for non-forwarding interfaces, and anything else for
 forwarding interfaces. I'd probably just set it to ~1~.     
+
+*** Multiple subnets and restricted routing
+
+**** Non-routing subnet
+     One useful configuration is to deliberately block IP forwarding on an
+     interface, to restrict the potential for devices (IoT in particular) to
+     leak information you might not want visible on the broader network.
+
+     Normally, to collect information from IoT devices that aren't routing to
+     the broader network, you need a dual-homed machine to collect logs or video
+     streams, for instance; when you're running a full Linux install on your
+     router, it /is/ a dual-homed machine, and can provide the access you
+     need. If you want to do more to limit your firewall's exposure, you might
+     consider a virtual machine; we'll talk about that in [[* Virtualized
+     firewall]].
 
 ** Configuring IPv6 routing (Optional, recommended?)
 
@@ -230,6 +326,11 @@ names.
 *** Forwarding and NAT
 
 **** masquerade for IPv4
+
+**** Restricting access for a given subnet
+     As an extension of the concept of the [[* Non-routing subnet]] you can also
+     have the firewall deny connections from an IoT device subnet into your main
+     subnet or subnets.
 
 ** Throughput considerations
 
