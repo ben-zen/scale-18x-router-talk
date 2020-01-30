@@ -9,9 +9,9 @@
 #+LATEX_HEADER:
 #+LATEX_HEADER_EXTRA:
 #+OPTIONS: H:2
-#+DESCRIPTION: You can build a router with the things you have at home, like
-#+DESCRIPTION: a spare computer. This talk will cover the choices available to
-#+DESCRIPTION: the home sysadmin, and help guide your homelab decision making.
+#+DESCRIPTION: Broaden your homelab experiments to include your network fabric
+#+DESCRIPTION: itself, have fun, and learn something along the way as we talk
+#+DESCRIPTION: about what choices you can make in building your own home router.
 #+KEYWORDS:
 #+SUBTITLE: A practical guide to building a router
 #+LATEX_COMPILER: pdflatex
@@ -60,6 +60,26 @@ support management protocols which are also inherently insecure.
 [[https://gist.github.com/nstarke/a611a19aab433555e91c656fe1f030a9][Netgear's routerlogin.net private cert]] was found to have been leaked /while I
 was writing this talk/ and that's far from the only security issue we've
 seen.
+
+
+** Reasons to get your hands dirty
+
+*** Sheer edification
+    
+*** Complex systems encounter complex failures
+    Above a certain complexity, systems encounter emergent behaviors-unexpected
+    and undesigned-for modes of operation that can manifest as failures and
+    errors in ways that you may not understand. Actually building some
+    familiarity with how networks work at a low level can help you comprehend
+    what's happening when your systems fail.
+
+    <Insert XKCD 2259 here>
+
+    When building out a network, you're taking a bunch of complex systems, and
+    by integrating all of them together, creating an even more complex
+    meta-system. Debugging this system without context is difficult, to say the
+    least, and you'll have more of a fighting chance with a deeper understanding
+    of how a router actually operates-and what goes into network design.
 
 ** Goals for our router
 
