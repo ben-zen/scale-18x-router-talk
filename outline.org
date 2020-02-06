@@ -216,12 +216,16 @@ have.
 
 **** Build your own
      Order parts from Supermicro, Tyan, other vendors, and build yourself a box!
-     This is a more expensive route, but can be very rewarding.
+     This is a more expensive route, but can be very rewarding. If you're
+     building with Supermicro, do be aware that working in their cases can be a
+     little like kitbashing, and might involve some initially questionable
+     approaches. <Photos of my router build.>
 
 **** Buy used
      There's plenty of 1U servers with fantastic loadouts available for
      relatively low prices. A manufacturer I was recently introduced to is HYVE,
-     who have some really cute boxes.
+     who have some really cute boxes; they've got a focus on warm-temp
+     datacenters, and they're blue! <Photos of Duwamish>
 
 ** Considerations for expandability
 
@@ -229,32 +233,54 @@ have.
 
 **** Gigabit now, what next?
 10 Gigabit hardware is getting really inexpensive! If you've got 8 PCIe gen 2
-lanes available, you can have a dual SFP+ card.
+lanes available, you can have a dual SFP+ card. If you've got more, you can do
+oh so much more. I've found multi-10-Gig/multi-gigabit cards, which can be handy
+for virtualization down the line.
+
 **** Wireless upgrades
 If you get a wireless card that can run in AP mode, you can use your router as
 your access point-and even trade out parts to upgrade to new standards as they
 become available.
+
 *** Additional different hardware
 **** Tensorflow PCIe!
 You can use Tensorflow in hardware now, relatively cheaply. They're [[https://www.mouser.com/ProductDetail/Coral/G650-04527-01?qs=sGAEpiMZZMsG1k5vdNM%252Fcyg9iDc%25252Bz9JYkOSrS1TKoVU%253D][$35 at
 Mouser.]] What would I do with these? I have no idea yet! But if you wanted to use
 some tool like greylog to capture logs, you could run an ML model analysis on
-it, and do so more efficiently.
-**** TPU - the security one
-Unfortunately TPU is now an overloaded term, but this device can be used to help
-speed up security computations, and work as a HWRNG.
+it, and do so more efficiently than just on your CPU.
+
+**** TPM for security stuff
+While TPM support is limited generally, you can use it as a source of HWRNG, and
+it can sometimes be used to offload cryptographic computations.
 
 * Software stack
-
-** Decide what matters to you
+This is an area where there's lots of hot-headed opinions, and lots of options
+without significant distinction. Decide what matters to you from the axes I'll
+present, and remember that this choice is not permanent. You can try something,
+decide it doesn't work, and change it out! That's okay!
 
 ** Axes of choice
 
-*** Graphical/web interface
+*** Interface style
     Some options are more configurable through webpages and graphical
     environments, but are less configurable through text interfaces; careful
     configuration of interfaces and potentially a VPN may be needed to remotely
     manage some of these stacks.
+
+    For a more complete list to explore, check out [[https://en.wikipedia.org/wiki/List_of_router_and_firewall_distributions][the list on Wikipedia]].
+
+**** Graphical/Web
+- pfSense
+- OPNsense
+- [[https://www.clearos.com/][clearOS]]
+- [[https://zeroshell.org/][zeroshell]]
+
+**** Textual
+- firewall-cmd (on any distro that supports it)
+- shorewall
+- [[https://www.vyos.io/][VyOS]] - both free and paid, this one's complicated. Derivative of Brocade
+  Networks' OS.
+- raw nftables
 
 *** Preference in base OS
     The mon0wall derivatives (pfSense, OPNsense) are all FreeBSD derivatives; in
@@ -262,7 +288,6 @@ speed up security computations, and work as a HWRNG.
     or because of hardware support.
 
 *** Support model
-
     Paid support options exist for many firewall-oriented distros and
     derivatives; generally speaking, there's also community support available,
     but you may or may not find what you need in forums, especially when dealing
@@ -270,9 +295,25 @@ speed up security computations, and work as a HWRNG.
 
 * Configuring a router
   For our demo here, I'm going to use Fedora, and I'm going to configure it with
-  very low-level tools, to highlight fine details that other systems might gloss
-  over.
+  very low-level tools, to highlight fine details that graphical environments
+  might gloss over.
 ** Installing the OS
+This part is probably the most ordinary aspect of this build. I'm going to use
+Fedora Server, and I'm going to leave any graphical components out, while making
+sure to set up SSH from the beginning.
+*** Important software to install before starting your journey
+Before we start configuring components, it's a good idea to have a few tools
+quick at hand.
+**** Text editor: ~nano~
+I'm not normally a nano user, but it's got a very straightforward interface, and
+all I really care about here is being able to edit files on the machine. I don't
+care about having the most ergonomic environment for my daily driver needs.
+
+**** Terminal multiplexer: ~tmux~
+Again, you may prefer other tools, but this is one I'm generally comfortable
+with, and can usually get around in easily. If you're going to remote into your
+machine a lot, you may want to configure it to be comfortable for you--but that
+is not the goal of this exercise.
 
 ** Configuring IPv4 routing
 
@@ -294,7 +335,11 @@ network, for instance.
 **** ~forwarding~
 For every interface that's going to be routing traffic, you'll want to enable
 this value. It's ~0~ for non-forwarding interfaces, and anything else for
-forwarding interfaces. I'd probably just set it to ~1~.     
+forwarding interfaces. I'd probably just set it to ~1~. If a significant number
+of your interfaces will not be forwarding traffic, it can be useful to
+individually enable them with their trees under the ~/proc/sys/net/ipv4/conf/~
+directory, otherwise you can enable forwarding on all interfaces and then
+selectively disable the ones you want off.
 
 *** Multiple subnets and restricted routing
 
@@ -365,11 +410,126 @@ hardware, there's really no problem with a 9000B MTU, and that's what I
 recommend for standard configurations.
 
 *** TCP offload
+
 An interesting technology but not widely supported; the primary vendor who's
 pushing for this tech is Chelsio; they've [[https://lwn.net/Articles/148697/][attempted in the past]] to get offload
 support built into the Linux kernel, but were rebuked on the grounds that this
 moves kernel decisions into a black box; we may yet see some changes in this
 attitude, but it is generally outside the scope of this talk.
+
+** External services
+
+Part of the fun of running your own firewall is being able to host services on
+it that would be limited or impossible on consumer hardware, and might be
+difficult to configure on commercial hardware. Some of these can be quality of
+life improvements (and may even be relatively straightforward to configure,
+as some of them would need to exist inside your network as well.)
+
+*** SSH
+Being able to remotely connect to your firewall and check on the state of your
+local network is useful--especially if you're away from home, and want to make
+sure that a service is working. However, you'll want to take some precautions.
+
+**** Before enabling on your WAN interface
+
+***** Disable password auth
+      Add at least one public key to your user's authorized_keys, validate that
+      you can connect with that key, then disable password authentication. Best
+      practices for SSH keys include using a different one on each device that
+      needs to connect, and potentially using a different key for each service
+      that you connect to with them. I recommend using [[https://en.wikipedia.org/wiki/EdDSA#Ed25519][Ed25519]] as the cipher;
+      it's short and powerful.
+***** Disable root login
+      Most linux installs do this by default now, but it's always good to
+      check.
+
+**** When enabling on your WAN interface
+
+***** Use a nonstandard port
+      This is optional, but reduces the number of random drive-by attempts that
+      you'll see. I'm a fan of port 24. This can be done just with a firewall
+      rule, even!
+
+***** Consider fail2ban, logging
+      In cases where you look at your ~journalctl~ logs and see lots of
+      attempted connections, you might consider adding fail2ban, and setting
+      some sufficiently high threshold--10 attempts, maybe. Remember when doing
+      this that it can bite /you/, too.
+
+*** Nice-to-have services
+**** VPN
+ Here we get into nice-to-have functionality, beyond the absolutely necessary. If
+ you want direct access to hosts inside your network from a remote location,
+ you'll want to use a VPN.
+
+ There's several approaches to this, largely depending on how willing you are to
+ DIY parts of the solution. Helpfully, [[https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=bd2463ac7d7ec51d432f23bf0e893fb371a908cd][Torvalds merged Wireguard into his branch
+ for 5.6]], so we should be able to rely on that being in production kernels soon,
+ and you won't need to install separate modules to get it working. There's a few
+ frontends for Wireguard under development now, but if you don't want to use
+ those there's OpenVPN, which is significantly more mature.
+
+**** Dynamic DNS
+ Instead of memorizing your IP address, why not use a domain name? Services like
+ no-ip can offer you a way to get back to your own machines relatively easily,
+ but if you're willing to pay a little for a domain, there are plenty that are
+ very cheap--and then you just need to set up a script to auto-update your DNS
+ record regularly. Personally, I like Hurricane Electric for my DNS hosting
+ needs, but there's lots of options out there. Pick one you like, and have fun!
+
+**** Personal webpage
+ Once you've got a domain name, clearly you need a website, too. Consider getting
+ a Let's Encrypt cert, while you're at it! Note that this is a fantastic service
+ to run in a container, or on another machine with port forwarding. If you take
+ the port forwarding route, just make sure to enable forwarding for as many ports
+ as you'll end up using--often both 80 and 443 are sufficient.
+
+
+** Debugging
+
+*** Tools
+All the tools you'd normally use to diagnose network connection issues
+apply-layer 3 and above tools to determine inter-network connectivity like
+~traceroute~ and ~ping~, but now we're also looking to understand firewall
+issues like if DNS requests are being blocked, or even some layer 2 issues, like
+whether or not our router's seeing ARP requests. This is where we start caring
+about the difference between received packets and processed packets, and where
+tools that interact directly with the NIC come in.
+
+Some tools outside of the normal desktop network toolkit, then, that we'll want:
+- tcpdump :: Collect logs directly from the firewall, on a given interface
+- Wireshark :: Collect and examine /pcaps/, packet captures. Lets you
+               investigate failures at your leisure, and sift through captures
+
+If these tools don't work on your router, you have a NIC that doesn't support
+promiscuous mode (can pass through all packets, not just those for its MAC
+address)-most should, but it's possible some won't. In that situation, you'll
+need to find a different NIC to use if you want to be able to debug with these
+tools.
+
+*** Classes of failure
+
+**** Physical
+Sometimes cables go bad. Sometimes NICs are bad. When a NIC's bad, one often has
+few options for recourse, but generally only a cable is bad. This might be as
+trivial as one of the conductors failing, or it may be as strange as a cable
+that's fine unless a specific frame goes through it. Bin the cable. Life's too
+short for bad cables.
+
+**** Logical
+
+***** Configuration error
+      There's a great early-internet meme of the 500 mile email. Configuration
+      errors can happen to the best of us, and they will manifest in myriad
+      ways. Strange traffic patterns, machines that can't communicate with each
+      other, things which work outside the network not working inside... you
+      name it!
+
+***** Assumption fault
+      This is a fun one. Sometimes your logical error is not in software-it's in
+      how you think about the situation. An assumption fault can come up all
+      sorts of ways-routes that don't work, network segments not being
+      shared-but when they're encountered, diagramming them can help.
 
 * Other configurations
 
@@ -382,14 +542,15 @@ attitude, but it is generally outside the scope of this talk.
      firewall is a prime target for attack. By running the firewall as a virtual
      machine instead of as the host, you can apply more restrictions to the
      firewall than you could with it running as the main OS. Now, it can only
-     access storage that is assigned to it, or any other device.
+     access storage or any other device that is assigned to it.
 
 **** Virtual firewall for virtual machines
      A common approach to securing multiple virtual services is to run a
      firewall VM and have it act as the gateway for all of your virtual
      machines, instead of having the host also operate as the gateway; this
      approach allows you to have hidden services inside the network you've
-     created, and treat your virtual network as you would a physical network.
+     created, and treat your virtual network as you would a physical
+     network.
 
 **** Quick update/deployment
      Updates to a virtual machine, depending on the approach, can be applied
@@ -429,6 +590,16 @@ line.
 *** Issues you might run into
 
 **** Drivers and PCIe Passthrough
+     I've been setting up an OPNsense VM to operate as the firewall for my
+     hackerspace; the server I purchased to function as our new firewall is far
+     more powerful than is necessary for a firewall alone, so I figured I'd host
+     some extra machines alongside the firewall, and get more use out of the
+     server.
+
+     Well, the Chelsio NIC I added to the server required a fair amount of
+     massaging to let me actually do the passthrough; I ended up needing to
+     use the ~pcistub~ kernel command line option for the whole card to stop the
+     kernel from loading the drivers for it.
 
 **** Virtual bridged network
 If you're using ~virsh~ to establish your networks, for a virtual network where
@@ -451,4 +622,5 @@ Let's build a router real quick!
 
 Set up a virtual firewall for other virtual hosts (mayyybe?)
 
-For the purposes of this 
+For the purposes of this section, we'll focus on a minimal firewall setup that
+covers the basic needs of a firewall, with clear extension points.
