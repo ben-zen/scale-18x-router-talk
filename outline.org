@@ -43,6 +43,11 @@ caused me to start looking for other options.
     (Insert TJ's photo here of configuration options like "famous games")
 
 *** Security vulnerabilities
+    Clearly, there are lots of opportunities for the software we run on our
+    routers to face security vulnerabilities. However, when we're picking out
+    our stack ourselves, we have the option to limit our risk by choosing a
+    minimal set of tools-and updating quickly, or as quickly as our vendor can
+    (^^,)
 
 **** Insecure default passwords and configurations
 There are insecure default settings on so many routers, and they often
@@ -61,6 +66,11 @@ support management protocols which are also inherently insecure.
 was writing this talk/ and that's far from the only security issue we've
 seen.
 
+**** Cisco NX-OS CVE-2020-3119
+     Turns out, Cisco's NX-OS' management protocol has a [[https://nvd.nist.gov/vuln/detail/CVE-2020-3119][stack overflow
+     vulnerability]], which, combined with the OS' weak ASLR, lack of stack
+     canaries, and the privileged context of the CDP parser means that a
+     successful attack is devastating.
 
 ** Reasons to get your hands dirty
 
@@ -119,7 +129,12 @@ seen.
   evolve as you build your system, too! Maybe you decide that one approach isn't
   working for you after you've done some basic setup. That's okay. Just remember
   to take notes and log your progress.
+
 ** Constraints or parameters
+   Obviously, what capabilities you want to focus on will define how you select
+   hardware to some extent; the short form is that as you want to have more
+   capabilities captured in your router, you'll need more resources in general;
+   there are some areas where you can optimize for a specific function.
 
 *** RAM
     4GB of RAM is more than enough for a basic firewall; if you want to add more
@@ -129,7 +144,9 @@ seen.
 *** CPU
     Any recent CPU will be powerful enough--here your concerns are cost and
     heat, mainly. Low-power embedded CPUs are great for low- or no-noise
-    operation.
+    operation. I do recommend multi-core, and if you'll be doing more crypto
+    on-board (TLS termination, VPN endpoint) your CPU should have SIMD
+    instructions.
 
 *** Storage
     120GB SSDs are $20 or less on Newegg; a lot of boards designed for a usecase
@@ -297,13 +314,16 @@ decide it doesn't work, and change it out! That's okay!
   For our demo here, I'm going to use Fedora, and I'm going to configure it with
   very low-level tools, to highlight fine details that graphical environments
   might gloss over.
+
 ** Installing the OS
-This part is probably the most ordinary aspect of this build. I'm going to use
-Fedora Server, and I'm going to leave any graphical components out, while making
-sure to set up SSH from the beginning.
+   This part is probably the most ordinary aspect of this build. I'm going to use
+   Fedora Server, and I'm going to leave any graphical components out, while
+   making sure to set up SSH from the beginning.
+
 *** Important software to install before starting your journey
-Before we start configuring components, it's a good idea to have a few tools
-quick at hand.
+    Before we start configuring components, it's a good idea to have a few tools
+    quick at hand.
+
 **** Text editor: ~nano~
 I'm not normally a nano user, but it's got a very straightforward interface, and
 all I really care about here is being able to edit files on the machine. I don't
@@ -315,38 +335,38 @@ with, and can usually get around in easily. If you're going to remote into your
 machine a lot, you may want to configure it to be comfortable for you--but that
 is not the goal of this exercise.
 
-** Configuring IPv4 routing
+** Configuring routing (for both IPv4 and IPv6)
 
-*** The ~/proc/sys/net~ filesystem and ~/etc/sysctl.d~
-    This filesystem will tell you a lot about the configuration of your network,
-    and the files in ~/etc/sysctl.d~ will set values at boot which can also be
-    dynamically configured; files in this folder are read in sort order, which
-    is why files are usually prefixed with a number denoting importance, low to
-    high. An example of a line in one of these config files is as follows:
-#+BEGIN_SRC
-net.ipv4.conf.all.log_martians = TRUE
-#+END_SRC
+*** Choose your network configuration tool
+    NetworkManager, systemd-networkd are both viable options; here I'm using
+    systemd-networkd since it's what I've been using at home.
 
-This line sets ~/proc/sys/net/ipv4/conf/all/log_martians~ to ~TRUE~; that will
-log any and all impossible addresses received by the machine to the kernel
-log. This could be useful if you're seeing a lot of unrouteable traffic on your
-network, for instance.
+**** Configure per-interface, per-file
+     Configuration files will be applied in alphanumerical order, and later
+     configurations will override earlier ones; it's reasonable to have
+     baselines defined in low-numbered scripts, and more custom configurations
+     in high-numbered scripts. All network setups do this.
+     
 
-**** ~forwarding~
-For every interface that's going to be routing traffic, you'll want to enable
-this value. It's ~0~ for non-forwarding interfaces, and anything else for
-forwarding interfaces. I'd probably just set it to ~1~. If a significant number
-of your interfaces will not be forwarding traffic, it can be useful to
-individually enable them with their trees under the ~/proc/sys/net/ipv4/conf/~
-directory, otherwise you can enable forwarding on all interfaces and then
-selectively disable the ones you want off.
+**** Static or dynamic IP allocation
+
+***** Static IP
+      Useful for your gateway address on internal networks, or if you have a
+      static IP allocation from your ISP.
+
+***** Dynamic IP
+      Handy when your upstream address is provided by DHCP; less handy if you're
+      trying to have routes declared statically.
 
 *** Multiple subnets and restricted routing
 
 **** Non-routing subnet
      One useful configuration is to deliberately block IP forwarding on an
      interface, to restrict the potential for devices (IoT in particular) to
-     leak information you might not want visible on the broader network.
+     leak information you might not want visible on the broader network. In this
+     case, you'd still run DHCP on the interface, but you would not present a
+     route to that network, and you would deliberately block forwarding for that
+     NIC.
 
      Normally, to collect information from IoT devices that aren't routing to
      the broader network, you need a dual-homed machine to collect logs or video
@@ -392,30 +412,6 @@ names.
     security extensions will handle that.
 
 *** Forwarding and NAT
-
-**** masquerade for IPv4
-
-**** Restricting access for a given subnet
-     As an extension of the concept of the [[* Non-routing subnet]] you can also
-     have the firewall deny connections from an IoT device subnet into your main
-     subnet or subnets.
-
-** Throughput considerations
-
-*** Jumbo Frames
-The standard MTU is 1500B; this is fine in a reasonably fast network, but does
-have a not-insignificant amount of overhead. That MTU includes the IP header,
-after all, and especially on an IPv6 network, that can be quite large. On modern
-hardware, there's really no problem with a 9000B MTU, and that's what I
-recommend for standard configurations.
-
-*** TCP offload
-
-An interesting technology but not widely supported; the primary vendor who's
-pushing for this tech is Chelsio; they've [[https://lwn.net/Articles/148697/][attempted in the past]] to get offload
-support built into the Linux kernel, but were rebuked on the grounds that this
-moves kernel decisions into a black box; we may yet see some changes in this
-attitude, but it is generally outside the scope of this talk.
 
 ** External services
 
@@ -616,6 +612,26 @@ entry.
    in--potentially with other untrusted devices there as well (such as IoT
    devices).
 
+** Throughput considerations - Extension points
+
+*** Jumbo Frames
+The standard MTU is 1500B; this is fine in a reasonably fast network, but does
+have a not-insignificant amount of overhead. That MTU includes the IP header,
+after all, and especially on an IPv6 network, that can be quite large.
+
+There's unfortunately issues with using DHCP to announce the MTU of a network;
+many DHCP clients will simply ignore your stated value and use 1500, so until
+jumbo frames in consumer OSes start showing up more often, we're going to have
+to set this aside.
+
+*** TCP offload
+
+An interesting technology but not widely supported; the primary vendor who's
+pushing for this tech is Chelsio; they've [[https://lwn.net/Articles/148697/][attempted in the past]] to get offload
+support built into the Linux kernel, but were rebuked on the grounds that this
+moves kernel decisions into a black box; we may yet see some changes in this
+attitude, but it is generally outside the scope of this talk.
+
 * Lab
 
 Let's build a router real quick!
@@ -624,3 +640,103 @@ Set up a virtual firewall for other virtual hosts (mayyybe?)
 
 For the purposes of this section, we'll focus on a minimal firewall setup that
 covers the basic needs of a firewall, with clear extension points.
+
+** Installing the OS
+
+** Setting up network configurations
+
+*** The ~/proc/sys/net~ filesystem and ~/etc/sysctl.d~
+    This filesystem will tell you a lot about the configuration of your network,
+    and the files in ~/etc/sysctl.d~ will set values at boot which can also be
+    dynamically configured; files in this folder are read in sort order, which
+    is why files are usually prefixed with a number denoting importance, low to
+    high. An example of a line in one of these config files is as follows:
+#+NAME ipv4-conf-martians-example
+#+BEGIN_SRC conf
+net.ipv4.conf.all.log_martians = TRUE
+#+END_SRC
+
+This line sets ~/proc/sys/net/ipv4/conf/all/log_martians~ to ~TRUE~; that will
+log any and all impossible addresses received by the machine to the kernel
+log. This could be useful if you're seeing a lot of unrouteable traffic on your
+network, for instance.
+
+**** ~forwarding~
+     To set up forwarding with networkd, you'll want to include the following
+     block in a configuration file matching each interface you want to forward
+     traffic.
+
+#+NAME networkd-forwarding
+#+BEGIN_SRC conf
+[Network]
+IPForward=yes
+#+END_SRC
+
+     For every interface that's going to be routing traffic, when you check
+     ~/proc/sys/net/ipv4/conf/$IFACE/forwarding~ it should show ~1~; for
+     non-forwarding interfaces, it'll show a ~0~. (If it shows any non-zero
+     value, that's correct.
+     
+**** Static IP configuration
+      Declare your address and subnet with the following network block (you only
+      need one block with each ehading, but this is useful to differentiate.)
+
+#+NAME networkd-static-ip
+#+BEGIN_SRC conf
+[Network]
+Address=172.24.3.1/24
+#+END_SRC
+
+**** Dynamic IP configuration (IPv4)
+      Turning on DHCP is similarly straightforward.
+
+#+NAME netword-dhcp
+#+BEGIN_SRC conf
+[Network]
+DHCP=ipv4
+#+END_SRC
+
+*** Setting MTU
+
+**** For the interface directly
+     We're using 9022 bytes here since that's large enough for various ethernet
+     headers, and still gives us a full jumbo frame.
+#+NAME networkd-mtu
+#+BEGIN_SRC conf
+[Link]
+MTUBytes=9022
+#+END_SRC
+
+**** For DHCP
+
+
+** Setting firewall rules
+
+*** Standard traffic rules
+
+**** masquerade for IPv4
+
+**** Restricting access for a given subnet
+     As an extension of the concept of the [[* Non-routing subnet]] you can also
+     have the firewall deny connections from an IoT device subnet into your main
+     subnet or subnets.
+
+*** Port forwarding for services
+    This is a form of single-port, one-to-one NAT; with this forwarding, you
+    pick a single external port to surface on your public IP address and forward
+    it to a specific internal port on either the firewall or another internal
+    system. An example of this might be an internal web server:
+
+#+NAME firewalld-https-forward
+#+BEGIN_SRC shell
+# This also needs to be run in permanent mode, but the short demo works.
+firewall-cmd --add-forward-port=port=80:proto=tcp:toport=80:toaddr=172.24.3.2
+firewall-cmd --add-forward-port=port=443:proto=tcp:toport=443:toaddr=172.24.3.2
+#+END_SRC
+
+With this port forwarded, our machine at ~172.24.3.2~ can now serve HTTP and
+HTTPS content, and we can proceed to use (for example) Let's Encrypt to
+secure it. Note that if you want to use a server on a different port to handle
+getting that certificate, you'll need to add another exemption for it.
+
+
