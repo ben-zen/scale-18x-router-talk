@@ -527,6 +527,45 @@ short for bad cables.
       sorts of ways-routes that don't work, network segments not being
       shared-but when they're encountered, diagramming them can help.
 
+** Recovery and fault-tolerance
+   Failures happen, unfortunately. Power outages strike, hard drives crash,
+   stray voltage kills your SSD's controller...
+
+   ... and then you need to get into your router.
+
+*** Backups!
+    Backing up key information matters a lot; this can be in the form of a
+    full-system backup, or as a build and design log. I'm a big fan of logging
+    my builds in markdown, or Org mode, or whatever journalling mechanism is
+    most convenient-then storing it in Git and keeping it off-site, on a service
+    like Gitlab, Bitbucket, or Gitlab.
+
+*** Break glass
+    Maybe your only laptop with an SSH key for your router on it had a hard
+    drive failure, or you had a device stolen. In this case, if you can't get
+    into your router because you've properly locked it down, you're in a
+    pickle.
+
+**** IPMI or Serial Console access
+     Assuming you have physical access to the server, you can connect a serial
+     console, and, assuming you've enabled it ahead of time for the machine, you
+     can sign in directly through that interface. If you have IPMI that supports
+     integrated KVM, such as a Supermicro machine or a suitably-licensed Dell or
+     HP board, you can do the same direct login.
+
+**** Spare private key
+     Whether the private key is stashed in a password manager, on a USB stick,
+     or encoded in a QR code, having an extra public key provisioned on your
+     router, with the private key on a separate physical device allows you to
+     maintain access to the router, from any device with an SSH client, without
+     pre-provisioning it.
+
+     With this mechanism, especially if the key is stored in some sort of
+     off-site backup, you'll want to regenerate your break-glass key after
+     resolving your lack of access, and stash the new one in its place;
+     otherwise, your extra credential is now just another credential that you
+     can use from that or any machine.
+
 * Other configurations
 
 ** Virtualized firewall
