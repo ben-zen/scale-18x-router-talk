@@ -8,7 +8,7 @@
 #+BEAMER_THEME: Hannover
 #+LATEX_HEADER:
 #+LATEX_HEADER_EXTRA:
-#+OPTIONS: H:2
+#+OPTIONS: H:3
 #+DESCRIPTION: Broaden your homelab experiments to include your network fabric
 #+DESCRIPTION: itself, have fun, and learn something along the way as we talk
 #+DESCRIPTION: about what choices you can make in building your own home router.
@@ -22,14 +22,20 @@
 
 ** Background
 
-I'm an unabashed text console enthusiast. I like to manage my equipment via
-command lines and SSH; it means I have a uniform interface when dealing with
-machines all over the place, and I can use it from pretty much anywhere-even my
-phone.
+*** ~whoami~
 
-But command line interfaces just aren't common on most consumer equipment sold
-today, in fact, they basically don't exist. That's a huge bummer for me, and
-caused me to start looking for other options.
+- Software engineer by day
+- I care too much about RFCs
+- In my spare time, I work on my hackerspace's network.
+
+ I'm an unabashed text console enthusiast. I like to manage my equipment via
+ command lines and SSH; it means I have a uniform interface when dealing with
+ machines all over the place, and I can use it from pretty much anywhere-even my
+ phone.
+
+ But command line interfaces just aren't common on most consumer equipment sold
+ today, in fact, they basically don't exist. That's a huge bummer for me, and
+ caused me to start looking for other options.
 
 ** Limitations of consumer hardware
 
@@ -40,7 +46,8 @@ caused me to start looking for other options.
 *** Software stack
     Weak configuration options-often limited to port forwarding or sticking a
     machine in a DMZ-and minimal firewall options beyond simply providing NAT.
-    (Insert TJ's photo here of configuration options like "famous games")
+#+CAPTION: A router's configuration screen, showing a list of "famous games" including Bittorrent. From [[https://twitter.com/tjhorner][@tjhorner]] on Twitter.
+[[./assets/famous-games.jpg]]
 
 *** Security vulnerabilities
     Clearly, there are lots of opportunities for the software we run on our
@@ -83,7 +90,8 @@ seen.
     familiarity with how networks work at a low level can help you comprehend
     what's happening when your systems fail.
 
-    <Insert XKCD 2259 here>
+#+CAPTION: Take a bunch of complex systems and stick them together... it'll be fine, right?
+[[./assets/networking_problems.png]]
 
     When building out a network, you're taking a bunch of complex systems, and
     by integrating all of them together, creating an even more complex
