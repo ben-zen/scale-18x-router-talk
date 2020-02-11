@@ -688,7 +688,16 @@ Set up a virtual firewall for other virtual hosts (mayyybe?)
 For the purposes of this section, we'll focus on a minimal firewall setup that
 covers the basic needs of a firewall, with clear extension points.
 
+** Pick a service to support
+
 ** Installing the OS
+Set up alpine in Docker?
+
+*** Add a user
+
+*** Set an SSH key
+
+*** Create a break-glass key
 
 ** Setting up network configurations
 
@@ -743,18 +752,6 @@ Address=172.24.3.1/24
 DHCP=ipv4
 #+END_SRC
 
-*** Setting MTU
-
-**** For the interface directly
-     We're using 9022 bytes here since that's large enough for various ethernet
-     headers, and still gives us a full jumbo frame.
-#+NAME networkd-mtu
-#+BEGIN_SRC conf
-[Link]
-MTUBytes=9022
-#+END_SRC
-
-**** For DHCP
 
 
 ** Setting firewall rules
