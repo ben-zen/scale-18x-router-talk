@@ -686,18 +686,75 @@ Let's build a router real quick!
 Set up a virtual firewall for other virtual hosts (mayyybe?)
 
 For the purposes of this section, we'll focus on a minimal firewall setup that
-covers the basic needs of a firewall, with clear extension points.
+covers the basic needs of a firewall, with clear extension points. The base
+image is Alpine Linux, an ultra-minimalistic distro based on musl-libc and
+busybox, which has an absolutely miniscule footprint and makes it great for
+demonstrating the low-level approach to this setup.
 
 ** Pick a service to support
+
+** Configure Docker with a second bridge
+This will need the ~--internal~ flag.
 
 ** Installing the OS
 Set up alpine in Docker?
 
+#+NAME demo-Dockerfile
+#+BEGIN_SRC conf
+FROM alpine:latest
+
+# nftables is the firewall we'll be using
+# tinyssh is a server, that doesn't support password auth-so we need keys
+# openrc is the package that will handle adding init services.
+RUN apk add --no-cache nftables tinyssh openrc
+
+CMD ["/bin/bash"]
+#+END_SRC
+
+#+BEGIN_SRC shell
+# Create the image!
+sudo docker build -t alfire .
+
+# Now let's run it.
+sudo docker run -i -t alfire
+#+END_SRC
+That will get us connected interactively to the ~alfire~ docker container; we
+can now start running some tasks.
+
 *** Add a user
+
 
 *** Set an SSH key
 
+#+BEGIN_SRC shell
+mkdir ~/.ssh
+chmod 700 ~/.ssh
+touch ~/.ssh/authorized_keys
+# Have your public key copied and ready for this next step!
+# We're going to append our public key to our authorized_keys so we can detach
+# from the container and SSH into it.
+echo "$PUBLIC_KEY" >> ~/.ssh/authorized_keys
+#+END_SRC
+
 *** Create a break-glass key
+We'll create an extra key for the purpose of a break-glass; this is mostly for
+the exercise, I don't expect anyone to need this. But! For the sake of the
+exercise, here's how we'll do it:
+
+#+NAME demo-break-glass
+#+BEGIN_SRC shell
+cd ~/demo
+ssh-keygen -t ed25519 -C break-glass -N "" -f id_ed25519.break-glass
+# -t ed25519 : Use the current preferred elliptic curve system for key generation
+# -C break-glass : set a comment of "break-glass", to identify the public key on
+#                  sight
+# -N "" : set an empty passphrase. For this key, we don't want to need to enter
+#         additional information to use it.
+# -f id_ed25519.break-glass : filename. Easily recognized.
+#+END_SRC
+
+Copy the public key's entire contents, then repeat the ~echo~ command above to
+set the break-glass key for your user.
 
 ** Setting up network configurations
 
@@ -755,6 +812,9 @@ DHCP=ipv4
 
 
 ** Setting firewall rules
+
+For this example we're going to be writing a few (just a few!) raw NFTables
+commands; in my home setup I use ~firewalld~ because it's just less complex.
 
 *** Standard traffic rules
 
