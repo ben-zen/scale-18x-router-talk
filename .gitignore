@@ -1,2 +1,12 @@
 # Ignore emacs backup files.
 *~
+
+# Ignore LaTeX intermediate files
+*.aux
+*.log
+*.nav
+*.out
+*.pdf
+*.snm
+*.toc
+*.vrb

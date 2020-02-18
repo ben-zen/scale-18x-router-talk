@@ -685,6 +685,8 @@ Let's build a router real quick!
 
 Set up a virtual firewall for other virtual hosts (mayyybe?)
 
+
+
 For the purposes of this section, we'll focus on a minimal firewall setup that
 covers the basic needs of a firewall, with clear extension points. The base
 image is Alpine Linux, an ultra-minimalistic distro based on musl-libc and

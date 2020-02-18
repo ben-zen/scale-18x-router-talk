@@ -74,7 +74,7 @@ Weak configuration options-often limited to port forwarding or sticking a
 machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.9\linewidth]{./assets/famous-games.jpg}
+\includegraphics[width=.75\linewidth]{./assets/famous-games.jpg}
 \caption{A router's configuration screen, showing a list of "famous games" including Bittorrent. From \href{https://twitter.com/tjhorner}{@tjhorner} on Twitter.}
 \end{figure}
 \end{frame}
@@ -134,7 +134,7 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 
   \begin{figure}[htbp]
     \centering
-    \includegraphics[width=.9\linewidth]{./assets/networking_problems.png}
+    \includegraphics[width=.75\linewidth]{./assets/networking_problems.png}
     \caption{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right?}
   \end{figure}
 
@@ -222,15 +222,19 @@ instructions.
 \end{frame}
 
 \begin{frame}[label={sec:org7599d13}]{Storage}
-120GB SSDs are \$20 or less on Newegg; a lot of boards designed for a usecase
-like this are also built to be booted off of flash drives or SD cards.
-
-\begin{block}{Extra capacity}
-If you're interested in doing more edge computing on your router-logging,
-traffic shaping, running an HTTP server for a personal website (why not?)
-you might want additional storage. This doesn't need to be an SSD, spinning
-platters will do fine.
-\end{block}
+  \begin{itemize}
+  \item<2-> Minimal amount needed to start - a flash drive will do
+  \item<3-> Speed of storage is not a priority
+  \item<4-> Extra capacity for bigger projects can be on a normal SATA HDD
+  \end{itemize}
+  \note{
+    120GB SSDs are \$20 or less on Newegg; a lot of boards designed for a usecase
+    like this are also built to be booted off of flash drives or SD cards.
+    If you're interested in doing more edge computing on your router-logging,
+    traffic shaping, running an HTTP server for a personal website (why not?)
+    you might want additional storage. This doesn't need to be an SSD, spinning
+    platters will do fine.
+  }
 \end{frame}
 
 \begin{frame}[label={sec:orgfdc6a4f}]{NICs}
@@ -257,31 +261,37 @@ platters will do fine.
       that! In my case, I really didn't. So, if your NIC suddenly doesn't work when
       you install an additional one, you should look for this in the BIOS/EFI.}
   \end{itemize}
+\end{frame}
 
-\begin{block}{Drivers a consideration}<4>
-A key point with NIC selection is driver support; depending on your OS choice,
-you may be more or less limited here! I recommend picking your NIC in
-conjunction with your OS or after-so you can confirm what support you'll
-have.
-\end{block}
+\begin{frame}{NIC caveats}
 
-\begin{block}{Link Aggregation/Bonding and VLANs}<5>
-You may encounter a situation where you want the core components of your
-network to be on one subnet, and to have client devices on another; if
-you've got a switch that can allocate ports to VLANs, then you can use one
-larger, more capable switch to handle multiple subnets in parallel-but that
-does require that your drivers support multiple VLANs on the same
-connection, otherwise you'll need a separate connection from the router for
-each subnet.
-\end{block}
-
-\begin{block}{Initial capacity requirement}<6>
-When choosing a NIC for your build, you should keep your throughput
-requirements in mind; if you host a media server inside your network, you
-may want to have higher throughput on your LAN connection than your
-WAN. Just try to keep your upstream and downstream in excess of what you'll
-need for your connection.
-\end{block}
+  \begin{itemize}
+  \item<2-> Drivers a consideration
+    \note{
+      A key point with NIC selection is driver support; depending on your OS choice,
+      you may be more or less limited here! I recommend picking your NIC in
+      conjunction with your OS or after-so you can confirm what support you'll
+      have.}
+  \item<3-> Link Aggregation/Bonding and VLANs
+    \note{
+      You may encounter a situation where you want the core components of your
+      network to be on one subnet, and to have client devices on another; if
+      you've got a switch that can allocate ports to VLANs, then you can use one
+      larger, more capable switch to handle multiple subnets in parallel-but that
+      does require that your drivers support multiple VLANs on the same
+      connection, otherwise you'll need a separate connection from the router for
+      each subnet.}
+  \item<4-> Initial capacity requirement
+    \note{
+      When choosing a NIC for your build, you should keep your throughput
+      requirements in mind; if you host a media server inside your network, you
+      may want to have higher throughput on your LAN connection than your
+      WAN. Just try to keep your upstream and downstream in excess of what you'll
+      need for your connection.}
+  \item<5-> System I/O capacity for future upgrades
+    \note{When you're looking to upgrade, or planning for future upgrades, make
+      sure you have the physical capacity to install new devices.}
+  \end{itemize}
 \end{frame}
 
 \subsection{Approaches}
@@ -295,77 +305,97 @@ need for your connection.
     Ubiquiti or MikroTik.}
 
   \begin{itemize}
-  \item QNAP
-    \note{
-      Mostly a NAS vendor, they have some switches and network equipment,
-      including what they call a \href{https://www.qnap.com/en/product/qgd-1600p}{smart edge switch}, which looks a lot like what
-      we're describing here.}
-
   \item<2-> Netgate firewalls
     \note{Ship with a pfSense license, this is great if you want an integrated
       solution.}
+  \item<3-> fitlet IoT Gateways
+    \note{These are basically the minimal necessary component for a firewall.}
+  \item<2-> QNAP
+    \note{
+      Mostly a NAS vendor, they have some switches and network equipment,
+      including what they call a \href{https://www.qnap.com/en/product/qgd-1600p}{smart edge switch},
+      which looks a lot like what we're describing here.}
   \end{itemize}
 \end{frame}
 
 \begin{frame}[label={sec:org1e54b71}]{Small Form Factor}
-\begin{block}{Standard desktop box}
-Any relatively recent SFF desktop will do, as long as you can install the
-parts you want to use in it!
-\end{block}
+  \begin{itemize}
+  \item<2-> Standard desktop box
+    \note{Any relatively recent SFF desktop will do, as long as you can install
+      the parts you want to use in it!}
 
-\begin{block}{PCEngines APU units}
-Useful boards for custom installations; if you're very space constrained or
-have limited need for expandability, this might be a good choice.
-\end{block}
+  \item<3-> PCEngines APU units
+    \note{Useful boards for custom installations; if you're very space
+      constrained or have limited need for expandability, this might be a good
+      choice.}
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[label={sec:org94796ed}]{Rackmount}
-\begin{block}{Build your own}
-Order parts from Supermicro, Tyan, other vendors, and build yourself a box!
-This is a more expensive route, but can be very rewarding. If you're
-building with Supermicro, do be aware that working in their cases can be a
-little like kitbashing, and might involve some initially questionable
-approaches. <Photos of my router build.>
-\end{block}
+  \begin{itemize}
+  \item<2-> Build your own
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=.3\linewidth]{./assets/router-setup.jpg}
+      \caption{First boot of a Supermicro firewall build}
+    \end{figure}
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=.3\linewidth]{./assets/router-cm.jpg}
+      \caption{The same router, cable-managed.}
+    \end{figure}
+    \note{Order parts from Supermicro, Tyan, other vendors, and build yourself
+      a box! This is a more expensive route, but can be very rewarding. If
+      you're building with Supermicro, do be aware that working in their cases
+      can be a little like kitbashing, and might involve some initially
+      questionable approaches. <Photos of my router build.>}
 
-\begin{block}{Buy used}
-There's plenty of 1U servers with fantastic loadouts available for
-relatively low prices. A manufacturer I was recently introduced to is HYVE,
-who have some really cute boxes; they've got a focus on warm-temp
-datacenters, and they're blue! <Photos of Duwamish>
-\end{block}
+  \item<3-> Buy used
+    \note{
+      There's plenty of 1U servers with fantastic loadouts available for
+      relatively low prices. A manufacturer I was recently introduced to is HYVE,
+      who have some really cute boxes; they've got a focus on warm-temp
+      datacenters, and they're blue!}
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=.3\linewidth]{./assets/duwamish-open.jpg}
+      \caption{First boot of a Supermicro router build}
+    \end{figure}
+  \end{itemize}
 \end{frame}
 
 \subsection{Considerations for expandability}
 \label{sec:org0ee9e3f}
 
 \begin{frame}[label={sec:org2c89497}]{Future network standards}
-\begin{block}{Gigabit now, what next?}
-10 Gigabit hardware is getting really inexpensive! If you've got 8 PCIe gen 2
-lanes available, you can have a dual SFP+ card. If you've got more, you can do
-oh so much more. I've found multi-10-Gig/multi-gigabit cards, which can be handy
-for virtualization down the line.
-\end{block}
+  \begin{itemize}
+  \item<2-> Gigabit now, what next?
+    \note{
+      10 Gigabit hardware is getting really inexpensive! If you've got 8 PCIe gen 2
+      lanes available, you can have a dual SFP+ card. If you've got more, you can do
+      oh so much more. I've found multi-10-Gig/multi-gigabit cards, which can be handy
+      for virtualization down the line.}
 
-\begin{block}{Wireless upgrades}
-If you get a wireless card that can run in AP mode, you can use your router as
-your access point-and even trade out parts to upgrade to new standards as they
-become available.
-\end{block}
+  \item<3-> Wireless upgrades
+    \note{If you get a wireless card that can run in AP mode, you can use your router as
+      your access point-and even trade out parts to upgrade to new standards as they
+      become available.}
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[label={sec:orgfcacbf9}]{Additional different hardware}
-\begin{block}{Tensorflow PCIe!}
-You can use Tensorflow in hardware now, relatively cheaply. They're \href{https://www.mouser.com/ProductDetail/Coral/G650-04527-01?qs=sGAEpiMZZMsG1k5vdNM\%252Fcyg9iDc\%25252Bz9JYkOSrS1TKoVU\%253D}{\$35 at
-Mouser.} What would I do with these? I have no idea yet! But if you wanted to use
-some tool like greylog to capture logs, you could run an ML model analysis on
-it, and do so more efficiently than just on your CPU.
-\end{block}
+  \begin{itemize}
+  \item<2-> Tensorflow PCIe!
+    \note{
+      You can use Tensorflow in hardware now, relatively cheaply. They're \href{https://www.mouser.com/ProductDetail/Coral/G650-04527-01?qs=sGAEpiMZZMsG1k5vdNM\%252Fcyg9iDc\%25252Bz9JYkOSrS1TKoVU\%253D}{\$35 at
+        Mouser.} What would I do with these? I have no idea yet! But if you wanted to use
+      some tool like greylog to capture logs, you could run an ML model analysis on
+      it, and do so more efficiently than just on your CPU.}
 
-\begin{block}{TPM for security stuff}
-While TPM support is limited generally, you can use it as a source of HWRNG, and
-it can sometimes be used to offload cryptographic computations.
-\end{block}
+  \item<3-> TPM for security stuff
+    \note{While TPM support is limited generally, you can use it as a source of HWRNG, and
+      it can sometimes be used to offload cryptographic computations.}
+  \end{itemize}
 \end{frame}
 
 \section{Software stack}
@@ -379,31 +409,32 @@ decide it doesn't work, and change it out! That's okay!
 \label{sec:org84da425}
 
 \begin{frame}[label={sec:orgb205e75}]{Interface style}
-Some options are more configurable through webpages and graphical
-environments, but are less configurable through text interfaces; careful
-configuration of interfaces and potentially a VPN may be needed to remotely
-manage some of these stacks.
+  \note{
+    Some options are more configurable through webpages and graphical
+    environments, but are less configurable through text interfaces; careful
+    configuration of interfaces and potentially a VPN may be needed to remotely
+    manage some of these stacks.
 
-For a more complete list to explore, check out \href{https://en.wikipedia.org/wiki/List\_of\_router\_and\_firewall\_distributions}{the list on Wikipedia}.
+    For a more complete list to explore, check out \href{https://en.wikipedia.org/wiki/List\_of\_router\_and\_firewall\_distributions}{the list on Wikipedia}.}
 
-\begin{block}{Graphical/Web}
-\begin{itemize}
-\item pfSense
-\item OPNsense
-\item \href{https://www.clearos.com/}{clearOS}
-\item \href{https://zeroshell.org/}{zeroshell}
-\end{itemize}
-\end{block}
+  \begin{itemize}
+  \item<2-> Graphical/Web
+    \begin{itemize}
+    \item pfSense
+    \item OPNsense
+    \item \href{https://www.clearos.com/}{clearOS}
+    \item \href{https://zeroshell.org/}{zeroshell}
+    \end{itemize}
 
-\begin{block}{Textual}
-\begin{itemize}
-\item firewall-cmd (on any distro that supports it)
-\item shorewall
-\item \href{https://www.vyos.io/}{VyOS} - both free and paid, this one's complicated. Derivative of Brocade
-Networks' OS.
-\item raw nftables
-\end{itemize}
-\end{block}
+  \item<3-> Textual
+    \begin{itemize}
+    \item firewall-cmd (on any distro that supports it)
+    \item shorewall
+    \item \href{https://www.vyos.io/}{VyOS} - both free and paid, this one's complicated. Derivative of Brocade
+      Networks' OS.
+    \item raw nftables
+    \end{itemize}
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[label={sec:orgdb902ba}]{Preference in base OS}
@@ -413,10 +444,15 @@ or because of hardware support.
 \end{frame}
 
 \begin{frame}[label={sec:org991cbe7}]{Support model}
-Paid support options exist for many firewall-oriented distros and
-derivatives; generally speaking, there's also community support available,
-but you may or may not find what you need in forums, especially when dealing
-with unusual hardware or network configurations.
+  \begin{itemize}
+  \item Community-only
+  \item Community version with paid extension
+  \item Paid-only
+  \end{itemize}
+  \note{Paid support options exist for many firewall-oriented distros and
+    derivatives; generally speaking, there's also community support available,
+    but you may or may not find what you need in forums, especially when dealing
+    with unusual hardware or network configurations.}
 \end{frame}
 
 \section{Configuring a router}
@@ -432,21 +468,22 @@ Fedora Server, and I'm going to leave any graphical components out, while
 making sure to set up SSH from the beginning.
 
 \begin{frame}[fragile,label={sec:org98c7403}]{Important software to install before starting your journey}
- Before we start configuring components, it's a good idea to have a few tools
-quick at hand.
+  \note{Before we start configuring components, it's a good idea to have a few tools
+    quick at hand.}
+  Set up some basic tools to simplify your configuration process. I've chosen a few examples to use:
+  \begin{itemize}
+  \item<2-> Text editor: \texttt{nano}
+    \note{
+      I'm not normally a nano user, but it's got a very straightforward interface, and
+      all I really care about here is being able to edit files on the machine. I don't
+      care about having the most ergonomic environment for my daily driver needs.}
 
-\begin{block}{Text editor: \texttt{nano}}
-I'm not normally a nano user, but it's got a very straightforward interface, and
-all I really care about here is being able to edit files on the machine. I don't
-care about having the most ergonomic environment for my daily driver needs.
-\end{block}
-
-\begin{block}{Terminal multiplexer: \texttt{tmux}}
-Again, you may prefer other tools, but this is one I'm generally comfortable
-with, and can usually get around in easily. If you're going to remote into your
-machine a lot, you may want to configure it to be comfortable for you--but that
-is not the goal of this exercise.
-\end{block}
+  \item<3-> Terminal multiplexer: \texttt{tmux}
+    \note{Again, you may prefer other tools, but this is one I'm generally comfortable
+      with, and can usually get around in easily. If you're going to remote into your
+      machine a lot, you may want to configure it to be comfortable for you--but that
+      is not the goal of this exercise.}
+  \end{itemize}
 \end{frame}
 
 \subsection{Configuring routing (for both IPv4 and IPv6)}
@@ -462,7 +499,6 @@ configurations will override earlier ones; it's reasonable to have
 baselines defined in low-numbered scripts, and more custom configurations
 in high-numbered scripts. All network setups do this.
 \end{block}
-
 
 \begin{block}{Static or dynamic IP allocation}
 \begin{block}{Static IP}
