@@ -3,6 +3,8 @@
 \documentclass[bigger]{beamer}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[default]{cantarell}
+\usepackage{FiraMono}
 \usepackage{graphicx}
 \usepackage{grffile}
 \usepackage{longtable}
@@ -15,7 +17,8 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 \usepackage{comment}
-\usetheme{Hannover}
+\usetheme{Boadilla}
+\usecolortheme[named=teal]{structure}
 \author{Ben Lewis}
 \date{\today}
 \title{Beyond Two Cans and a String}
@@ -59,6 +62,10 @@ today, in fact, they basically don't exist. That's a huge bummer for me, and
 caused me to start looking for other options.
 \end{notes}
 
+\end{frame}
+
+\begin{frame}
+  I'm not my employer, and this talk is composed of my personal opinions and observations.
 \end{frame}
 
 \subsection{Limitations of consumer hardware}
@@ -457,19 +464,47 @@ or because of hardware support.
 
 \section{Configuring a router}
 \label{sec:org2055775}
-For our demo here, I'm going to use Fedora, and I'm going to configure it with
-very low-level tools, to highlight fine details that graphical environments
-might gloss over.
+\begin{frame}
+  So, we have the parts, how do we set it up?
+\end{frame}
+\note{
+  For our demo here, I'm going to use Fedora, and I'm going to configure it with
+  very low-level tools, to highlight fine details that graphical environments
+  might gloss over.}
 
 \subsection{Installing the OS}
 \label{sec:orgfdf5a5f}
-This part is probably the most ordinary aspect of this build. I'm going to use
-Fedora Server, and I'm going to leave any graphical components out, while
-making sure to set up SSH from the beginning.
+\begin{frame}{State should be self-maintaining}
+  \note{There's lots of approaches to designing a system, and for a hobby server
+    some of this overhead may be unnecessary, but it's a good habit to get into,
+    and I've often found that having a philosophy in mind about how you're going
+    to configure a system leads to a cleaner design.}
+  \begin{itemize}
+  \item<2-> System configuration should be automatic
+    \note{For a reliable and lower-stress administration experience, configure
+      components-firewall, services, applications-to start automatically and
+      self-configure themselves.}
+  \item<2-> Reboot often to test your configuration
+    \note{After installing a new component and configuring it, save your
+      configuration, then reboot to confirm that the component is actually
+      waking when it's needed.}
+  \item<3-> High uptimes don't equate to reliability
+    \note{A machine that hasn't been rebooted since a major update is in an
+      unconfirmed state, and that's an unsafe machine.}
+  \item<4-> Lots of tooling isn't necessary for a one-off build
+    \note{I won't cover Ansible or orchestration here, but if you're creating
+      more than one system, you may want to take the configuration you've built
+      and use automation to make it repeatable!}
+  \end{itemize}
+\end{frame}
+\note{
+  This part is probably the most ordinary aspect of this build. I'm going to use
+  Fedora Server, and I'm going to leave any graphical components out, while
+  making sure to set up SSH from the beginning.}
 
 \begin{frame}[fragile,label={sec:org98c7403}]{Important software to install before starting your journey}
   \note{Before we start configuring components, it's a good idea to have a few tools
-    quick at hand.}
+    quick at hand. I like all of my machines to have the basic tools for monitoring}
   Set up some basic tools to simplify your configuration process. I've chosen a few examples to use:
   \begin{itemize}
   \item<2-> Text editor: \texttt{nano}
@@ -483,10 +518,14 @@ making sure to set up SSH from the beginning.
       with, and can usually get around in easily. If you're going to remote into your
       machine a lot, you may want to configure it to be comfortable for you--but that
       is not the goal of this exercise.}
+  \item<4-> System hardware monitoring: \texttt{ipmitool}
+    \note{For a VM, this isn't so necessary, but on a server with onboard IPMI,
+      it's nice to be able to see what the system's reading out. I routinely use
+      \texttt{watch ipmitool sensors} in a \texttt{tmux} window.}
   \end{itemize}
 \end{frame}
 
-\subsection{Configuring routing (for both IPv4 and IPv6)}
+\subsection{Configuring routing}
 \label{sec:org5b3a27e}
 
 \begin{frame}[label={sec:org8d7dd3d}]{Choose your network configuration tool}
@@ -531,12 +570,15 @@ consider a virtual machine; we'll talk about that in \ref{sec:org8517efe}.
 \end{block}
 \end{frame}
 
-\subsection{Configuring IPv6 routing (Optional, recommended?)}
+\subsection{Configuring IPv6 routing (Optional)}
 \label{sec:orgab512e8}
+\begin{frame}
+  So what's that IPv6 thing about?
+\end{frame}
 
 \begin{frame}[fragile,label={sec:orgf2a58cf}]{SLAAC and PD-assigned address}
- \begin{block}{accept\(_{\text{ra}}\) and the tri-state boolean}
-From \href{https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt}{ip-sysctl.txt} in the Linux kernel documentation,
+ \begin{block}{\texttt{accept\_ra} and the tri-state boolean}
+From \href{https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt}{\texttt{ip-sysctl.txt}} in the Linux kernel documentation,
 \begin{quote}
 Possible values are:
     0 Do not accept Router Advertisements.
@@ -566,10 +608,24 @@ names.
 \end{frame}
 
 \begin{frame}[label={sec:org9196245}]{Don't block ICMPv6!}
-It's hard to stress this enough. Blocking ICMPv6 is a great way to cause
-arbitrary, difficult-to-diagnose slowdowns if you have IPv6 support
-enabled. This isn't going to improve your security posture, SLAAC with
-security extensions will handle that.
+  \note{Coming from an IPv4 background, you might be tempted to try blocking
+    ICMPv6 on your network out of an abundance of caution, reasoning that
+    otherwise an attacker could map your network space.
+
+    Given that the smallest subnet an ISP will issue is a /64, there's no reason
+    to worry about your IP space being mapped, and ICMPv6 is used for so much!}
+  ICMPv6 does a lot of heavy lifting in the IPv6 world! Here's a few things it
+  does:
+  \begin{itemize}
+  \item<2-> Router solicitation and advertisement (replaces DHCP)
+  \item<3-> MTU discovery
+  \item<4-> Neighbor solicitation and advertisement
+  \end{itemize}
+  
+  \note{It's hard to stress this enough. Blocking ICMPv6 is a great way to cause
+    arbitrary, difficult-to-diagnose slowdowns if you have IPv6 support
+    enabled. This isn't going to improve your security posture, SLAAC with
+    security extensions will handle that.}
 \end{frame}
 
 \begin{frame}[label={sec:org87a247f}]{Forwarding and NAT}
@@ -577,148 +633,184 @@ security extensions will handle that.
 
 \subsection{External services}
 \label{sec:org55a4d52}
+\begin{frame}{Running extra services}
+  You have a server at your disposal, make use of it!
 
-Part of the fun of running your own firewall is being able to host services on
+  You can make your router accessible and functional when you're at home, and away.
+\note{Part of the fun of running your own firewall is being able to host services on
 it that would be limited or impossible on consumer hardware, and might be
 difficult to configure on commercial hardware. Some of these can be quality of
 life improvements (and may even be relatively straightforward to configure,
-as some of them would need to exist inside your network as well.)
+as some of them would need to exist inside your network as well.)}
+\end{frame}
 
 \begin{frame}[fragile,label={sec:org8635474}]{SSH}
+  
  Being able to remotely connect to your firewall and check on the state of your
-local network is useful--especially if you're away from home, and want to make
-sure that a service is working. However, you'll want to take some precautions.
+ local network is useful--especially if you're away from home, and want to make
+ sure that a service is working. However, you'll want to take some precautions.
 
-\begin{block}{Before enabling on your WAN interface}
-\begin{block}{Disable password auth}
-Add at least one public key to your user's authorized\(_{\text{keys}}\), validate that
-you can connect with that key, then disable password authentication. Best
-practices for SSH keys include using a different one on each device that
-needs to connect, and potentially using a different key for each service
-that you connect to with them. I recommend using \href{https://en.wikipedia.org/wiki/EdDSA\#Ed25519}{Ed25519} as the cipher;
-it's short and powerful.
-\end{block}
-\begin{block}{Disable root login}
-Most linux installs do this by default now, but it's always good to
-check.
-\end{block}
-\end{block}
+ \begin{itemize}
+ \item<2-> Before enabling access on your WAN interface
+   \begin{itemize}
+   \item<3-> Add a key to \texttt{authorized\_keys}
+   \item<4-> Disable password auth
+     \note{
+       Add at least one public key to your user's authorized\_keys, validate that
+       you can connect with that key, then disable password authentication. Best
+       practices for SSH keys include using a different one on each device that
+       needs to connect, and potentially using a different key for each service
+       that you connect to with them. I recommend using \href{https://en.wikipedia.org/wiki/EdDSA\#Ed25519}{Ed25519} as the cipher;
+       it's short and powerful.}
+   \item <5-> Disable root login
+     \note{Most linux installs do this by default now, but it's always good to
+       check.}
+   \end{itemize}
+ \item<6-> When enabling on your WAN interface
+   \begin{itemize}
+   \item<7-> Optionally, use a nonstandard port
+     \note{This is optional, but reduces the number of random drive-by attempts that
+       you'll see. I'm a fan of port 24. This can be done just with a firewall
+       rule, even!}
 
-\begin{block}{When enabling on your WAN interface}
-\begin{block}{Use a nonstandard port}
-This is optional, but reduces the number of random drive-by attempts that
-you'll see. I'm a fan of port 24. This can be done just with a firewall
-rule, even!
-\end{block}
-
-\begin{block}{Consider fail2ban, logging}
-In cases where you look at your \texttt{journalctl} logs and see lots of
-attempted connections, you might consider adding fail2ban, and setting
-some sufficiently high threshold--10 attempts, maybe. Remember when doing
-this that it can bite \emph{you}, too.
-\end{block}
-\end{block}
+   \item<8-> Consider fail2ban, logging
+     \note{In cases where you look at your \texttt{journalctl} logs and see lots of
+       attempted connections, you might consider adding fail2ban, and setting
+       some sufficiently high threshold--10 attempts, maybe. Remember when doing
+       this that it can bite \emph{you}, too.}
+   \end{itemize}
+ \end{itemize}
 \end{frame}
 
 \begin{frame}[label={sec:org79d4237}]{Nice-to-have services}
-\begin{block}{VPN}
-Here we get into nice-to-have functionality, beyond the absolutely necessary. If
-you want direct access to hosts inside your network from a remote location,
-you'll want to use a VPN.
+  \begin{block}{VPN}<2->
+    \note {Here we get into nice-to-have functionality, beyond the absolutely necessary. If
+      you want direct access to hosts inside your network from a remote location,
+      you'll want to use a VPN.
 
-There's several approaches to this, largely depending on how willing you are to
-DIY parts of the solution. Helpfully, \href{https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=bd2463ac7d7ec51d432f23bf0e893fb371a908cd}{Torvalds merged Wireguard into his branch
-for 5.6}, so we should be able to rely on that being in production kernels soon,
-and you won't need to install separate modules to get it working. There's a few
-frontends for Wireguard under development now, but if you don't want to use
-those there's OpenVPN, which is significantly more mature.
-\end{block}
+      There's several approaches to this, largely depending on how willing you are to
+      DIY parts of the solution. Helpfully, \href{https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=bd2463ac7d7ec51d432f23bf0e893fb371a908cd}{Torvalds merged Wireguard into his branch
+        for 5.6}, so we should be able to rely on that being in production kernels soon,
+      and you won't need to install separate modules to get it working. There's a few
+      frontends for Wireguard under development now, but if you don't want to use
+      those there's OpenVPN, which is significantly more mature.}
+    \begin{description}
+    \item<3-> [OpenVPN] Well-known, broadly supported with clients for most platforms.
+    \item<4-> [Wireguard] Recently integrated into the next kernel release, a faster
+      but less broadly supported option.
+    \end{description}
+  \end{block}
 
-\begin{block}{Dynamic DNS}
-Instead of memorizing your IP address, why not use a domain name? Services like
-no-ip can offer you a way to get back to your own machines relatively easily,
-but if you're willing to pay a little for a domain, there are plenty that are
-very cheap--and then you just need to set up a script to auto-update your DNS
-record regularly. Personally, I like Hurricane Electric for my DNS hosting
-needs, but there's lots of options out there. Pick one you like, and have fun!
-\end{block}
+  \begin{block}{Dynamic DNS}<5->
+    \note{
+      Instead of memorizing your IP address, why not use a domain name? Services like
+      no-ip can offer you a way to get back to your own machines relatively easily,
+      but if you're willing to pay a little for a domain, there are plenty that are
+      very cheap--and then you just need to set up a script to auto-update your DNS
+      record regularly. Personally, I like Hurricane Electric for my DNS hosting
+      needs, but there's lots of options out there. Pick one you like, and have fun!}
+    \begin{itemize}
+    \item<6-> no-ip or similar for quick access
+    \item<7-> Get a domain name and use a nameserver with a DDNS API, and use a script to update
+    \end{itemize}
+  \end{block}
 
-\begin{block}{Personal webpage}
-Once you've got a domain name, clearly you need a website, too. Consider getting
-a Let's Encrypt cert, while you're at it! Note that this is a fantastic service
-to run in a container, or on another machine with port forwarding. If you take
-the port forwarding route, just make sure to enable forwarding for as many ports
-as you'll end up using--often both 80 and 443 are sufficient.
-\end{block}
+  \begin{block}{Personal webpage}<8->
+    \note{
+      Once you've got a domain name, clearly you need a website, too. Consider getting
+      a Let's Encrypt cert, while you're at it! Note that this is a fantastic service
+      to run in a container, or on another machine with port forwarding. If you take
+      the port forwarding route, just make sure to enable forwarding for as many ports
+      as you'll end up using--often both 80 and 443 are sufficient.}
+    If you set up a domain name, consider hosting a webpage with a simple server
+    \end{block}
 \end{frame}
-
 
 \subsection{Debugging}
 \label{sec:orgedb5cb4}
 
+\begin{frame}
+  Something went wrong!
+
+  What to do?
+\end{frame}
+
 \begin{frame}[fragile,label={sec:orgba55011}]{Tools}
- All the tools you'd normally use to diagnose network connection issues
-apply-layer 3 and above tools to determine inter-network connectivity like
-\texttt{traceroute} and \texttt{ping}, but now we're also looking to understand firewall
-issues like if DNS requests are being blocked, or even some layer 2 issues, like
-whether or not our router's seeing ARP requests. This is where we start caring
-about the difference between received packets and processed packets, and where
-tools that interact directly with the NIC come in.
+  \note{All the tools you'd normally use to diagnose network connection issues
+    apply-layer 3 and above tools to determine inter-network connectivity like
+    \texttt{traceroute} and \texttt{ping}, but now we're also looking to understand firewall
+    issues like if DNS requests are being blocked, or even some layer 2 issues, like
+    whether or not our router's seeing ARP requests. This is where we start caring
+    about the difference between received packets and processed packets, and where
+    tools that interact directly with the NIC come in.}
 
-Some tools outside of the normal desktop network toolkit, then, that we'll want:
-\begin{description}
-\item[{tcpdump}] Collect logs directly from the firewall, on a given interface
-\item[{Wireshark}] Collect and examine \emph{pcaps}, packet captures. Lets you
-investigate failures at your leisure, and sift through captures
-\end{description}
+  \texttt{ping} and \texttt{traceroute} or \texttt{dig} are invaluable, as is
+  understanding the output of the \texttt{ip} family of commands; those are the
+  same as a desktop, however.
+ 
+  Some tools outside of the normal desktop network toolkit:
+  \begin{description}
+  \item[{tcpdump}] Collect logs directly from the firewall, on a given interface
+  \item[{Wireshark}] Collect and examine \emph{pcaps}, packet captures. Lets you
+    investigate failures at your leisure, and sift through captures
+  \end{description}
 
-If these tools don't work on your router, you have a NIC that doesn't support
-promiscuous mode (can pass through all packets, not just those for its MAC
-address)-most should, but it's possible some won't. In that situation, you'll
-need to find a different NIC to use if you want to be able to debug with these
-tools.
+  \note{If these tools don't work on your router, you have a NIC that doesn't support
+    promiscuous mode (can pass through all packets, not just those for its MAC
+    address)-most should, but it's possible some won't. In that situation, you'll
+    need to find a different NIC to use if you want to be able to debug with these
+    tools.}
 \end{frame}
 
 \begin{frame}[label={sec:org477961b}]{Classes of failure}
-\begin{block}{Physical}
-Sometimes cables go bad. Sometimes NICs are bad. When a NIC's bad, one often has
-few options for recourse, but generally only a cable is bad. This might be as
-trivial as one of the conductors failing, or it may be as strange as a cable
-that's fine unless a specific frame goes through it. Bin the cable. Life's too
-short for bad cables.
-\end{block}
+  \begin{itemize}
+    \item<2-> Physical
+      \note{Sometimes cables go bad. Sometimes NICs are bad. When a NIC's bad, one often has
+        few options for recourse, but generally only a cable is bad. This might be as
+        trivial as one of the conductors failing, or it may be as strange as a cable
+        that's fine unless a specific frame goes through it. Bin the cable. Life's too
+        short for bad cables.}
 
-\begin{block}{Logical}
-\begin{block}{Configuration error}
-There's a great early-internet meme of the 500 mile email. Configuration
-errors can happen to the best of us, and they will manifest in myriad
-ways. Strange traffic patterns, machines that can't communicate with each
-other, things which work outside the network not working inside\ldots{} you
-name it!
-\end{block}
+    \item<3-> Logical
+      \begin{itemize}
+        \item<4-> Configuration error
+          \note{There's a great early-internet meme of the 500 mile email. Configuration
+            errors can happen to the best of us, and they will manifest in myriad
+            ways. Strange traffic patterns, machines that can't communicate with each
+            other, things which work outside the network not working inside\ldots{} you
+            name it!}
 
-\begin{block}{Assumption fault}
-This is a fun one. Sometimes your logical error is not in software-it's in
-how you think about the situation. An assumption fault can come up all
-sorts of ways-routes that don't work, network segments not being
-shared-but when they're encountered, diagramming them can help.
-\end{block}
-\end{block}
+          \item<5-> Assumption fault
+            \note{This is a fun one. Sometimes your logical error is not in software-it's in
+              how you think about the situation. An assumption fault can come up all
+              sorts of ways-routes that don't work, network segments not being
+              shared-but when they're encountered, diagramming them can help.}
+      \end{itemize}
+  \end{itemize}
 \end{frame}
 
 \subsection{Recovery and fault-tolerance}
 \label{sec:orgcb67d08}
-Failures happen, unfortunately. Power outages strike, hard drives crash,
-stray voltage kills your SSD's controller\ldots{}
 
-\ldots{} and then you need to get into your router.
+\begin{frame}{Recovery and fault-tolerance}
+    Failures happen, unfortunately. Power outages strike, hard drives crash,
+    stray voltage kills your SSD's controller\ldots{}
+
+    \ldots{} and then you need to get into your router.
+\end{frame}
 
 \begin{frame}[label={sec:orgbfa871a}]{Backups!}
-Backing up key information matters a lot; this can be in the form of a
-full-system backup, or as a build and design log. I'm a big fan of logging
-my builds in markdown, or Org mode, or whatever journalling mechanism is
-most convenient-then storing it in Git and keeping it off-site, on a service
-like Gitlab, Bitbucket, or Gitlab.
+  These can come in various flavors:
+  \begin{itemize}
+  \item<2-> Full-system disk images
+  \item<3-> Configurations in a private (or public if that's your thing) repo
+  \item<4-> Build log with detailed notes
+  \end{itemize}
+  \note{Backing up key information matters a lot; this can be in the form of a
+    full-system backup, or as a build and design log. I'm a big fan of logging
+    my builds in markdown, or Org mode, or whatever journalling mechanism is
+    most convenient-then storing it in Git and keeping it off-site, on a service
+    like Gitlab, Bitbucket, or Gitlab.}
 \end{frame}
 
 \begin{frame}[label={sec:org48c7f73}]{Break glass}
@@ -727,7 +819,7 @@ drive failure, or you had a device stolen. In this case, if you can't get
 into your router because you've properly locked it down, you're in a
 pickle.
 
-\begin{block}{IPMI or Serial Console access}
+\begin{block}{IPMI or Serial Console access}<2->
 Assuming you have physical access to the server, you can connect a serial
 console, and, assuming you've enabled it ahead of time for the machine, you
 can sign in directly through that interface. If you have IPMI that supports
@@ -735,7 +827,7 @@ integrated KVM, such as a Supermicro machine or a suitably-licensed Dell or
 HP board, you can do the same direct login.
 \end{block}
 
-\begin{block}{Spare private key}
+\begin{block}{Spare private key}<3->
 Whether the private key is stashed in a password manager, on a USB stick,
 or encoded in a QR code, having an extra public key provisioned on your
 router, with the private key on a separate physical device allows you to
@@ -753,113 +845,152 @@ can use from that or any machine.
 \section{Other configurations}
 \label{sec:org319584b}
 
+\begin{frame}{Other ideas}
+  So, what else can we do?
+\end{frame}
+
 \subsection{Virtualized firewall}
 \label{sec:org8517efe}
 
-\begin{frame}[label={sec:org10a5a15}]{Why}
-\begin{block}{Reducing risk from compromise}
-Being the gateway device that has the most internet-facing surface area, your
-firewall is a prime target for attack. By running the firewall as a virtual
-machine instead of as the host, you can apply more restrictions to the
-firewall than you could with it running as the main OS. Now, it can only
-access storage or any other device that is assigned to it.
-\end{block}
-
-\begin{block}{Virtual firewall for virtual machines}
-A common approach to securing multiple virtual services is to run a
-firewall VM and have it act as the gateway for all of your virtual
-machines, instead of having the host also operate as the gateway; this
-approach allows you to have hidden services inside the network you've
-created, and treat your virtual network as you would a physical
-network.
-\end{block}
-
-\begin{block}{Quick update/deployment}
-Updates to a virtual machine, depending on the approach, can be applied
-extremely quickly and with little downtime.
-\end{block}
+\begin{frame}{Other ideas}
+  Virtualize it!
 \end{frame}
 
-\begin{frame}[fragile,label={sec:org80a262d}]{How}
- \begin{block}{Pick your OS}
-Basically all the questions we asked above apply twice, now; we need to
-determine how much physical RAM our VM host needs, and of that amount, how much
-the VM needs. A multi-core processor, and preferably with a lot of cores, is
-essential.
-\end{block}
+\begin{frame}[label={sec:org10a5a15}]{Why virtualize?}
+  \begin{itemize}
+  \item<2-> Reducing risk from compromise
+    \note{
+      Being the gateway device that has the most internet-facing surface area, your
+      firewall is a prime target for attack. By running the firewall as a virtual
+      machine instead of as the host, you can apply more restrictions to the
+      firewall than you could with it running as the main OS. Now, it can only
+      access storage or any other device that is assigned to it.
+    }
 
-\begin{block}{Connect your VM to the network}
-\begin{block}{Bridging a physical NIC}
-One common approach is to connect the VM to one of the host machine's NICs
-through a sort of bridge.
+  \item<3-> Virtual firewall for virtual machines
+    \note{
+      A common approach to securing multiple virtual services is to run a
+      firewall VM and have it act as the gateway for all of your virtual
+      machines, instead of having the host also operate as the gateway; this
+      approach allows you to have hidden services inside the network you've
+      created, and treat your virtual network as you would a physical
+      network.
+    }
 
-\begin{block}{Linux Bridge interface}
-One option is to make your host also route packets, although this might be said
-to defeat the purpose of the firewall here.
-\end{block}
+  \item Quick update/deployment
+    \note{
+      Updates to a virtual machine, depending on the approach, can be applied
+      extremely quickly and with little downtime.}
+  \end{itemize}
+\end{frame}
 
-\begin{block}{\href{https://en.wikipedia.org/wiki/Promiscuous\_mode}{Promiscuous Mode NIC}}
-In this mode the NIC passes all packets it receives to the kernel, which means
-it can respond to multiple MAC addresses if the host(s) so choose; this is a
-common approach to allow one or multiple VMs to share a network connection with
-a host.
-\end{block}
-\end{block}
+\begin{frame}[fragile,label={sec:org80a262d}]{How to virtualize?}
+  \begin{itemize}
+  \item<2-> Pick your OS
+    \note{
+      Basically all the questions we asked above apply twice, now; we need to
+      determine how much physical RAM our VM host needs, and of that amount, how much
+      the VM needs. A multi-core processor, and preferably with a lot of cores, is
+      essential.}
 
-\begin{block}{PCIe Passthrough NIC}
-For my virtual firewall setup, i've opted to dedicate an entire physical card
-with multiple ports to the firewall, and thereby made my VM host indirectly
-connected to the main network. To achieve this I ended up adding an instruction
-to load \texttt{pcistub} as the driver for a specific device to the kernel command
-line.
-\end{block}
-\end{block}
+  \item<3-> Connect your VM to the network
+    \begin{itemize}
+    \item<5-> Linux Bridge interface
+      \note{
+        One option is to make your host also route packets, although this might be said
+        to defeat the purpose of the firewall here.}
+
+    \item<6-> \href{https://en.wikipedia.org/wiki/Promiscuous\_mode}{Promiscuous Mode NIC}
+      \note{
+        In this mode the NIC passes all packets it receives to the kernel, which means
+        it can respond to multiple MAC addresses if the host(s) so choose; this is a
+        common approach to allow one or multiple VMs to share a network connection with
+        a host.}
+
+    \item<7-> PCIe Passthrough NIC
+      \note{
+        For my virtual firewall setup, i've opted to dedicate an entire physical card
+        with multiple ports to the firewall, and thereby made my VM host indirectly
+        connected to the main network. To achieve this I ended up adding an instruction
+        to load \texttt{pcistub} as the driver for a specific device to the kernel command
+        line.}
+    \end{itemize}
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile,label={sec:org44af7c6}]{Issues you might run into}
- \begin{block}{Drivers and PCIe Passthrough}
-I've been setting up an OPNsense VM to operate as the firewall for my
-hackerspace; the server I purchased to function as our new firewall is far
-more powerful than is necessary for a firewall alone, so I figured I'd host
-some extra machines alongside the firewall, and get more use out of the
-server.
+  \begin{itemize}
+  \item<2-> Drivers and PCIe Passthrough
+    \note{
+      I've been setting up an OPNsense VM to operate as the firewall for my
+      hackerspace; the server I purchased to function as our new firewall is far
+      more powerful than is necessary for a firewall alone, so I figured I'd host
+      some extra machines alongside the firewall, and get more use out of the
+      server.
 
-Well, the Chelsio NIC I added to the server required a fair amount of
-massaging to let me actually do the passthrough; I ended up needing to
-use the \texttt{pcistub} kernel command line option for the whole card to stop the
-kernel from loading the drivers for it.
-\end{block}
+      Well, the Chelsio NIC I added to the server required a fair amount of
+      massaging to let me actually do the passthrough; I ended up needing to
+      use the \texttt{pcistub} kernel command line option for the whole card to stop the
+      kernel from loading the drivers for it.}
 
-\begin{block}{Virtual bridged network}
-If you're using \texttt{virsh} to establish your networks, for a virtual network where
-the firewall VM is the gateway, you'll need to specify how all your VMs attach
-to it by configuring the network in their XML config to not have a forwarding
-entry.
-\end{block}
+  \item<3-> Virtual bridged network
+    \note{
+      If you're using \texttt{virsh} to establish your networks, for a virtual network where
+      the firewall VM is the gateway, you'll need to specify how all your VMs attach
+      to it by configuring the network in their XML config to not have a forwarding
+      entry.}
+  \end{itemize}
 \end{frame}
 
-\subsection{Multiple firewalls}
-\label{sec:org5849af4}
-Seen as a "defense in depth" strategy, this takes the medieval walled city
-approach to network design. Here, we have potentially two levels of network;
-we might want to keep "soft hosts"--personal computers, other relatively
-unsecured systems--behind a more restricted firewall, while still allowing
-machines operating as servers to have a more porous environment to work
-in--potentially with other untrusted devices there as well (such as IoT
-devices).
+\begin{frame}{Other ideas}
+  Have a firewall behind a firewall
+\end{frame}
 
-\subsection{Throughput considerations - Extension points}
+\begin{frame}{Multiple firewalls}
+  
+  Seen as a "defense in depth" strategy, this takes the medieval walled city
+  approach to network design. Here, we have potentially two levels of network;
+  we might want to keep "soft hosts"--personal computers, other relatively
+  unsecured systems--behind a more restricted firewall, while still allowing
+  machines operating as servers to have a more porous environment to work
+  in--potentially with other untrusted devices there as well (such as IoT
+  devices).
+\end{frame}
+
+\subsection{Tuning and speed improvements}
 \label{sec:orgb9c111a}
+\begin{frame}{Tuning for speed}
+    \centering
+    \includegraphics[height=0.75\textheight]{./assets/packet-pinball.png}
+    
+    \raggedleft
+    \small
+    \href{http://deathgenerator.com}{Death Generator} by \href{https://twitter.com/foone}{@foone}
+\end{frame}
 
 \begin{frame}[label={sec:org13ce3d4}]{Jumbo Frames}
-The standard MTU is 1500B; this is fine in a reasonably fast network, but does
-have a not-insignificant amount of overhead. That MTU includes the IP header,
-after all, and especially on an IPv6 network, that can be quite large.
+  Ethernet frame overhead: 22B
+  Standard MTU: 1500B
+  IPv4 headers: $\geq$20B
+  Overhead for an IPv4 packet in a standard ethernet frame: 2.8\% minimum
+  IPv6 headers: $\geq$40B,
+  Overhead for an IPv6 packet in a standard ethernet frame: 4.1\% minimum
 
-There's unfortunately issues with using DHCP to announce the MTU of a network;
-many DHCP clients will simply ignore your stated value and use 1500, so until
-jumbo frames in consumer OSes start showing up more often, we're going to have
-to set this aside.
+  With jumbo MTU: 9000B
+  IPv4 total overhead: 0.5\%
+  IPv6 total overhead: 0.7\%
+
+  This matters more for above-gigabit speeds, but where configurable jumbo frames can provide significant throughput improvements.
+
+  \note{
+    The standard MTU is 1500B; this is fine in a reasonably fast network, but does
+    have a not-insignificant amount of overhead. That MTU includes the IP header,
+    after all, and especially on an IPv6 network, that can be quite large.
+
+    There's unfortunately issues with using DHCP to announce the MTU of a network;
+    many DHCP clients will simply ignore your stated value and use 1500, so until
+    jumbo frames in consumer OSes start showing up more often, we're going to have
+    to set this aside.}
 \end{frame}
 
 \begin{frame}[label={sec:orgc8262cc}]{TCP offload}
