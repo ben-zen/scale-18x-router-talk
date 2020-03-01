@@ -317,7 +317,7 @@ instructions.
       solution.}
   \item<3-> fitlet IoT Gateways
     \note{These are basically the minimal necessary component for a firewall.}
-  \item<2-> QNAP
+  \item<4-> QNAP
     \note{
       Mostly a NAS vendor, they have some switches and network equipment,
       including what they call a \href{https://www.qnap.com/en/product/qgd-1600p}{smart edge switch},
@@ -343,13 +343,8 @@ instructions.
   \item<2-> Build your own
     \begin{figure}[htbp]
       \centering
-      \includegraphics[width=.3\linewidth]{./assets/router-setup.jpg}
-      \caption{First boot of a Supermicro firewall build}
-    \end{figure}
-    \begin{figure}[htbp]
-      \centering
       \includegraphics[width=.3\linewidth]{./assets/router-cm.jpg}
-      \caption{The same router, cable-managed.}
+      \caption{A custom-built Supermicro-based router.}
     \end{figure}
     \note{Order parts from Supermicro, Tyan, other vendors, and build yourself
       a box! This is a more expensive route, but can be very rewarding. If
@@ -529,15 +524,34 @@ or because of hardware support.
 \label{sec:org5b3a27e}
 
 \begin{frame}[label={sec:org8d7dd3d}]{Choose your network configuration tool}
-NetworkManager, systemd-networkd are both viable options; here I'm using
-systemd-networkd since it's what I've been using at home.
+  \begin{itemize}
+  \item<2-> systemd-networkd
+  \item<3-> NetworkManager
+  \item<4-> netplan
+  \end{itemize}
+  \note{NetworkManager, systemd-networkd are both viable options; here I'm using
+    systemd-networkd since it's what I've been using at home.}
+\end{frame}
 
-\begin{block}{Configure per-interface, per-file}
-Configuration files will be applied in alphanumerical order, and later
+\begin{frame}{Interface-specific configuration}
+  Different aspects of our network configuration will go through different areas:
+  \begin{itemize}
+  \item<2-> \texttt{/etc/sysctl.d} files for interface-specific settings
+  \item<3-> Network configuration depending on your management mechanism
+    \begin{itemize}
+    \item<4-> \texttt{/etc/NetworkManager/NetworkManager.conf}
+    \item<5-> \texttt{/etc/systemd/network} files
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\note{Configuration files will be applied in alphanumerical order, and later
 configurations will override earlier ones; it's reasonable to have
 baselines defined in low-numbered scripts, and more custom configurations
-in high-numbered scripts. All network setups do this.
-\end{block}
+in high-numbered scripts. All network setups do this.}
+
+\begin{frame}{NetworkManager config}
+  NetworkManager 
 
 \begin{block}{Static or dynamic IP allocation}
 \begin{block}{Static IP}
@@ -819,27 +833,27 @@ drive failure, or you had a device stolen. In this case, if you can't get
 into your router because you've properly locked it down, you're in a
 pickle.
 
-\begin{block}{IPMI or Serial Console access}<2->
-Assuming you have physical access to the server, you can connect a serial
-console, and, assuming you've enabled it ahead of time for the machine, you
-can sign in directly through that interface. If you have IPMI that supports
-integrated KVM, such as a Supermicro machine or a suitably-licensed Dell or
-HP board, you can do the same direct login.
-\end{block}
+\begin {itemize}
+\item<2-> IPMI or Serial Console access
+  \note{Assuming you have physical access to the server, you can connect a serial
+    console, and, assuming you've enabled it ahead of time for the machine, you
+    can sign in directly through that interface. If you have IPMI that supports
+    integrated KVM, such as a Supermicro machine or a suitably-licensed Dell or
+    HP board, you can do the same direct login.}
 
-\begin{block}{Spare private key}<3->
-Whether the private key is stashed in a password manager, on a USB stick,
-or encoded in a QR code, having an extra public key provisioned on your
-router, with the private key on a separate physical device allows you to
-maintain access to the router, from any device with an SSH client, without
-pre-provisioning it.
+\item<3-> Spare private key
+  \note{
+    Whether the private key is stashed in a password manager, on a USB stick,
+    or encoded in a QR code, having an extra public key provisioned on your
+    router, with the private key on a separate physical device allows you to
+    maintain access to the router, from any device with an SSH client, without
+    pre-provisioning it.
 
-With this mechanism, especially if the key is stored in some sort of
-off-site backup, you'll want to regenerate your break-glass key after
-resolving your lack of access, and stash the new one in its place;
-otherwise, your extra credential is now just another credential that you
-can use from that or any machine.
-\end{block}
+    With this mechanism, especially if the key is stored in some sort of
+    off-site backup, you'll want to regenerate your break-glass key after
+    resolving your lack of access, and stash the new one in its place;
+    otherwise, your extra credential is now just another credential that you
+    can use from that or any machine.}
 \end{frame}
 
 \section{Other configurations}
@@ -969,6 +983,13 @@ can use from that or any machine.
 \end{frame}
 
 \begin{frame}[label={sec:org13ce3d4}]{Jumbo Frames}
+  When looking at especially above-gigabit networks, you might notice that you're not getting as close to the
+  ripping-fast speeds you expected; instead, your throughput might look \textit{okay}, but not stellar.
+\end{frame}
+
+\begin{frame}{Jumbo Frames}
+  By massively increasing the payload in an ethernet frame, since each frame's overhead is a fixed amount, for the same
+  payload size you're sending 1/6 as many Ethernet headers.
   Ethernet frame overhead: 22B
   Standard MTU: 1500B
   IPv4 headers: $\geq$20B
