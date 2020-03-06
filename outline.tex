@@ -8,7 +8,6 @@
 \usepackage{graphicx}
 \usepackage{grffile}
 \usepackage{longtable}
-\usepackage{wrapfig}
 \usepackage{rotating}
 \usepackage[normalem]{ulem}
 \usepackage{amsmath}
@@ -19,6 +18,7 @@
 \usepackage{comment}
 \usepackage{tikz}
 \usepackage{listings}
+\usepackage{fontawesome5}
 \usetheme{Boadilla}
 \usecolortheme[named=teal]{structure}
 \author{Ben Lewis}
@@ -33,14 +33,22 @@
  pdfcreator={Emacs 26.3 (Org mode 9.1.9)}, 
  pdflang={English}}
 \excludecomment{notes}
+
+\setbeamertemplate{section page}
+{
+  \vfill
+  \begingroup
+  \centering
+  \usebeamerfont{section title}\textcolor{teal}{\insertsection}\par
+  \endgroup
+  \vfill
+}
+
 \begin{document}
 
 \maketitle
 
-\section{Consumer routers bore me}
-\label{sec:org769d52d}
-
-\subsection{Background}
+\section{Background}
 \label{sec:orgb37081c}
 
 \begin{frame}[fragile,label={sec:org06c16c6}]{\texttt{whoami}}
@@ -59,12 +67,16 @@ But command line interfaces just aren't common on most consumer equipment sold
 today, in fact, they basically don't exist. That's a huge bummer for me, and
 caused me to start looking for other options.
 \end{notes}
-
 \end{frame}
 
 \begin{frame}
   I'm not my employer, and this talk is composed of my personal opinions and observations.
 \end{frame}
+
+\section{Consumer routers bore me}
+\label{sec:org769d52d}
+
+\frame{\sectionpage}
 
 \subsection{Limitations of consumer hardware}
 \label{sec:orgbbeeef6}
@@ -139,8 +151,8 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 
   \begin{figure}[htbp]
     \centering
-    \includegraphics[width=.75\linewidth]{./assets/networking_problems.png}
-    \caption{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right?}
+    \includegraphics[height=.6\textheight]{./assets/networking_problems.png}
+    \caption{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right? (XKCD \href{https://xkcd.com/2259}{2259})}
   \end{figure}
 
 \note{
@@ -337,31 +349,33 @@ instructions.
 \end{frame}
 
 \begin{frame}[label={sec:org94796ed}]{Rackmount}
-  \begin{itemize}
-  \item<2-> Build your own
-    \begin{figure}[htbp]
-      \centering
-      \includegraphics[width=.3\linewidth]{./assets/router-cm.jpg}
-      \caption{A custom-built Supermicro-based router.}
-    \end{figure}
-    \note{Order parts from Supermicro, Tyan, other vendors, and build yourself
-      a box! This is a more expensive route, but can be very rewarding. If
-      you're building with Supermicro, do be aware that working in their cases
-      can be a little like kitbashing, and might involve some initially
-      questionable approaches. <Photos of my router build.>}
+  Build your own
+  \onslide<2>
+  \begin{figure}[htbp]
+    \centering
+    \includegraphics[height=.6\textheight]{./assets/router-cm.jpg}
+    \caption{A custom Supermicro build in a 1U switch-depth chassis}
+  \end{figure}
+  \note{Order parts from Supermicro, Tyan, other vendors, and build yourself
+    a box! This is a more expensive route, but can be very rewarding. If
+    you're building with Supermicro, do be aware that working in their cases
+    can be a little like kitbashing, and might involve some initially
+    questionable approaches. <Photos of my router build.>}
+\end{frame}
 
-  \item<3-> Buy used
+\begin{frame}{Rackmount}
+  \ldots or buy used!
     \note{
       There's plenty of 1U servers with fantastic loadouts available for
       relatively low prices. A manufacturer I was recently introduced to is HYVE,
       who have some really cute boxes; they've got a focus on warm-temp
       datacenters, and they're blue!}
+    \onslide<2>
     \begin{figure}[htbp]
       \centering
-      \includegraphics[width=.3\linewidth]{./assets/duwamish-open.jpg}
-      \caption{First boot of a Supermicro router build}
+      \includegraphics[height=.6\textheight]{./assets/duwamish-open.jpg}
+      \caption{A HYVE Zeus secondhand server}
     \end{figure}
-  \end{itemize}
 \end{frame}
 
 \subsection{Considerations for expandability}
@@ -400,13 +414,17 @@ instructions.
 
 \section{Software stack}
 \label{sec:org2fd137a}
+\begin{frame}
 This is an area where there's lots of hot-headed opinions, and lots of options
 without significant distinction. Decide what matters to you from the axes I'll
 present, and remember that this choice is not permanent. You can try something,
 decide it doesn't work, and change it out! That's okay!
 
+\end{frame}
 \subsection{Axes of choice}
 \label{sec:org84da425}
+
+\subsectionpage
 
 \begin{frame}[label={sec:orgb205e75}]{Interface style}
   \note{
@@ -1263,6 +1281,26 @@ dhcp-host=anaheim,192.168.10.2
   \end{block}
 \end{frame}
 
+\begin{frame}[fragile]{Making \texttt{dnsmasq} into a service}
+  Adapted from the \href{https://jamielinux.com/docs/libvirt-networking-handbook/appendix/run-dnsmasq-with-systemd.html}{\textit{libvirt Networking Handbook}}:
+  \begin{block}{\texttt{/etc/systemd/system/dnsmasq.service}}
+\begin{verbatim}
+[Unit]
+Description=DHCP and DNS caching server.
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/dnsmasq -k
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+\end{verbatim}
+  \end{block}
+\end{frame}
+
 \begin{frame}{References}
   For this talk, and in my personal router-building, I've relied on lots of
   resources. Here's a few:
@@ -1270,5 +1308,15 @@ dhcp-host=anaheim,192.168.10.2
   \item dnsmasq man page, online at http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
   \item Kozierok, Charles M. \textit{The TCP/IP Guide.} https://nostarch.com/tcpip.htm
   \end{itemize}
+\end{frame}
+
+\begin{frame}{Thanks!}
+  \faTwitter @benjf5\\
+  \faMastodon @ben\_zen@mastodon.social\\
+
+  I'll open up the repo for this talk at \url{https://github.com/ben-zen/scale-18x-router-talk}
+
+  The most up-to-date version there will be the \LaTeX.
+
 \end{frame}
 \end{document}
