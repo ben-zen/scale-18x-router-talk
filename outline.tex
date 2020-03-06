@@ -1,6 +1,6 @@
 % Created 2020-02-10 Mon 22:57
 % Intended LaTeX compiler: pdflatex
-\documentclass[bigger]{beamer}
+\documentclass[bigger,aspectratio=169]{beamer}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[default]{cantarell}
@@ -17,6 +17,8 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 \usepackage{comment}
+\usepackage{tikz}
+\usepackage{listings}
 \usetheme{Boadilla}
 \usecolortheme[named=teal]{structure}
 \author{Ben Lewis}
@@ -34,10 +36,6 @@
 \begin{document}
 
 \maketitle
-\begin{frame}{Outline}
-\tableofcontents
-\end{frame}
-
 
 \section{Consumer routers bore me}
 \label{sec:org769d52d}
@@ -567,58 +565,80 @@ trying to have routes declared statically.
 \end{frame}
 
 \begin{frame}[label={sec:org3a006ff}]{Multiple subnets and restricted routing}
-\begin{block}{Non-routing subnet}
-One useful configuration is to deliberately block IP forwarding on an
-interface, to restrict the potential for devices (IoT in particular) to
-leak information you might not want visible on the broader network. In this
-case, you'd still run DHCP on the interface, but you would not present a
-route to that network, and you would deliberately block forwarding for that
-NIC.
+  \begin{itemize}
+  \item<2-> Non-routing subnet (\texttt{net.ipv4.conf.\$IFACE.forwarding = 0})
+    \begin{itemize}
+    \item<3-> Keep IoT devices off the wider internet
+    \item<4-> Securely access IP cameras
+    \item<5-> Examine untrusted devices?
+    \end{itemize}
+  \item<6-> Egress-only subnet
+    \begin{itemize}
+    \item<7-> Can reach the broader internet
+    \item<8-> Can't see other local subnets
+    \item<9-> Great for devices that need to phone home, but that you don't trust
+    \end{itemize}
+  \end{itemize}
+  \note{One useful configuration is to deliberately block IP forwarding on an
+    interface, to restrict the potential for devices (IoT in particular) to
+    leak information you might not want visible on the broader network. In this
+    case, you'd still run DHCP on the interface, but you would not present a
+    route to that network, and you would deliberately block forwarding for that
+    NIC.
 
-Normally, to collect information from IoT devices that aren't routing to
-the broader network, you need a dual-homed machine to collect logs or video
-streams, for instance; when you're running a full Linux install on your
-router, it \emph{is} a dual-homed machine, and can provide the access you
-need. If you want to do more to limit your firewall's exposure, you might
-consider a virtual machine; we'll talk about that in \ref{sec:org8517efe}.
-\end{block}
+    Normally, to collect information from IoT devices that aren't routing to
+    the broader network, you need a dual-homed machine to collect logs or video
+    streams, for instance; when you're running a full Linux install on your
+    router, it \emph{is} a dual-homed machine, and can provide the access you
+    need. If you want to do more to limit your firewall's exposure, you might
+    consider a virtual machine; we'll talk about that in \ref{sec:org8517efe}.
+
+    To allow devices to only connect to the broader internet, you'll allow them
+    to forward packets, but use a firewall rule to drop packets intended for
+    other local subnets.
+  }
 \end{frame}
 
-\subsection{Configuring IPv6 routing (Optional)}
-\label{sec:orgab512e8}
-\begin{frame}
-  So what's that IPv6 thing about?
-\end{frame}
+%% \subsection{Configuring IPv6 routing (Optional)}
+%% \label{sec:orgab512e8}
+%% \begin{frame}
+%%   So what's that IPv6 thing about?
+%% \end{frame}
 
-\begin{frame}[fragile,label={sec:orgf2a58cf}]{SLAAC and PD-assigned address}
- \begin{block}{\texttt{accept\_ra} and the tri-state boolean}
-From \href{https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt}{\texttt{ip-sysctl.txt}} in the Linux kernel documentation,
-\begin{quote}
-Possible values are:
-    0 Do not accept Router Advertisements.
-    1 Accept Router Advertisements if forwarding is disabled.
-    2 Overrule forwarding behaviour. Accept Router Advertisements
-      even if forwarding is enabled.
-\end{quote}
+%% \begin{frame}[fragile,label={sec:orgf2a58cf}]{SLAAC and PD-assigned address}
+%%  \begin{block}{\texttt{accept\_ra} and the tri-state boolean}
+%% From \href{https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt}{\texttt{ip-sysctl.txt}} in the Linux kernel documentation,
+%% \begin{quote}
+%% Possible values are:
+%%     0 Do not accept Router Advertisements.
+%%     1 Accept Router Advertisements if forwarding is disabled.
+%%     2 Overrule forwarding behaviour. Accept Router Advertisements
+%%       even if forwarding is enabled.
+%% \end{quote}
 
-Note that this means we'll want to set \texttt{accept\_ra} to \texttt{2} \emph{specifically} on our
-WAN interface for IPv6 support.
-\end{block}
-\end{frame}
+%% Note that this means we'll want to set \texttt{accept\_ra} to \texttt{2} \emph{specifically} on our
+%% WAN interface for IPv6 support.
+%% \end{block}
+%% \end{frame}
 
-\begin{frame}[label={sec:orga4304bc}]{6to4 tunnel (Hurricane Electric)}
-\end{frame}
+%% \begin{frame}[label={sec:orga4304bc}]{6to4 tunnel (Hurricane Electric)}
+%% \end{frame}
 
 \subsection{Configuring firewall rules}
 \label{sec:org19a3785}
 
 \begin{frame}[fragile,label={sec:org1530f3c}]{nftables versus frontends}
- Not really a "versus" here, but configuring nftables directly instead of using a
-frontend is a viable path, and if you have custom logic for null-routing
-specific IPs, you might want to have your own custom tooling writing your \texttt{.nft}
-files and applying them. For this talk, we'll use firewalld. It's close to the
-same syntax, but has some nice-to-have details like port numbers having service
-names.
+  \begin{itemize}
+  \item<2-> Not really a ``versus'' situation
+  \item<3-> Pick your frontend, or just write scripts
+  \item<4-> For the demo, we'll use \texttt{firewalld}
+  \end{itemize}
+  \note{Not really a "versus" here, but configuring nftables directly instead of using a
+    frontend is a viable path, and if you have custom logic for null-routing
+    specific IPs, you might want to have your own custom tooling writing your \texttt{.nft}
+    files and applying them. For this talk, we'll use firewalld. It's close to the
+    same syntax, but has some nice-to-have details like port numbers having service
+    names.}
 \end{frame}
 
 \begin{frame}[label={sec:org9196245}]{Don't block ICMPv6!}
@@ -628,6 +648,8 @@ names.
 
     Given that the smallest subnet an ISP will issue is a /64, there's no reason
     to worry about your IP space being mapped, and ICMPv6 is used for so much!}
+  (Short digression into IPv6 here.)
+  
   ICMPv6 does a lot of heavy lifting in the IPv6 world! Here's a few things it
   does:
   \begin{itemize}
@@ -833,7 +855,7 @@ drive failure, or you had a device stolen. In this case, if you can't get
 into your router because you've properly locked it down, you're in a
 pickle.
 
-\begin {itemize}
+\begin{itemize}
 \item<2-> IPMI or Serial Console access
   \note{Assuming you have physical access to the server, you can connect a serial
     console, and, assuming you've enabled it ahead of time for the machine, you
@@ -854,6 +876,7 @@ pickle.
     resolving your lack of access, and stash the new one in its place;
     otherwise, your extra credential is now just another credential that you
     can use from that or any machine.}
+\end{itemize}
 \end{frame}
 
 \section{Other configurations}
@@ -891,7 +914,7 @@ pickle.
       network.
     }
 
-  \item Quick update/deployment
+  \item<4-> Quick update/deployment
     \note{
       Updates to a virtual machine, depending on the approach, can be applied
       extremely quickly and with little downtime.}
@@ -909,19 +932,19 @@ pickle.
 
   \item<3-> Connect your VM to the network
     \begin{itemize}
-    \item<5-> Linux Bridge interface
+    \item<4-> Linux Bridge interface
       \note{
         One option is to make your host also route packets, although this might be said
         to defeat the purpose of the firewall here.}
 
-    \item<6-> \href{https://en.wikipedia.org/wiki/Promiscuous\_mode}{Promiscuous Mode NIC}
+    \item<5-> \href{https://en.wikipedia.org/wiki/Promiscuous\_mode}{Promiscuous Mode NIC}
       \note{
         In this mode the NIC passes all packets it receives to the kernel, which means
         it can respond to multiple MAC addresses if the host(s) so choose; this is a
         common approach to allow one or multiple VMs to share a network connection with
         a host.}
 
-    \item<7-> PCIe Passthrough NIC
+    \item<6-> PCIe Passthrough NIC
       \note{
         For my virtual firewall setup, i've opted to dedicate an entire physical card
         with multiple ports to the firewall, and thereby made my VM host indirectly
@@ -1024,13 +1047,15 @@ attitude, but it is generally outside the scope of this talk.
 
 \section{Lab}
 \label{sec:org475924a}
-
+\begin{frame}{Demo: Build a virtual router}
+  
 Let's build a router real quick!
 
 Set up a virtual firewall for other virtual hosts (mayyybe?)
 
 For the purposes of this section, we'll focus on a minimal firewall setup that
 covers the basic needs of a firewall, with clear extension points.
+\end{frame}
 
 \subsection{Installing the OS}
 \label{sec:org4390e2a}
@@ -1038,107 +1063,186 @@ covers the basic needs of a firewall, with clear extension points.
 \subsection{Setting up network configurations}
 \label{sec:orgc20c062}
 
-\begin{frame}[fragile,label={sec:org6f2d154}]{The \texttt{/proc/sys/net} filesystem and \texttt{/etc/sysctl.d}}
-     This filesystem will tell you a lot about the configuration of your network,
+\begin{frame}{Setting up our virtual LAN}
+  \begin{columns}
+    \begin{column}{.45\textwidth}
+      \vfill
+      \includegraphics[width=\linewidth]{./assets/vnet-config.png}
+      \vfill
+    \end{column}
+    \begin{column}{.45\textwidth}
+      \vfill
+      In VMware Workstation, you'll want to make sure that you have a host-only network
+      where you've disabled DHCP and removed the host connection; we'll make this the
+      private network managed by our firewall.
+      \vfill
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Setting up our virtual LAN}
+  \begin{columns}
+    \begin{column}{.45\textwidth}
+      \vfill
+      \includegraphics[width=\linewidth]{./assets/router-vm-network-settings.png}
+      \vfill
+    \end{column}
+    \begin{column}{.45\textwidth}
+      \vfill
+      We'll also want to make sure to add this new network to our firewall VM.
+
+      Any VMs created to use this network need to be configured to not have any
+      other network connection.
+      \vfill
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Setting static IP}
+  \note{Here we're creating a connection in NetworkManager on the ens36
+    interface, with an address of 192.168.10.1. For this connection, we won't
+    define a gateway, because this machine will be the gateway.}
+  Create a static IP connection definition:
+\texttt{
+nmcli con add ifname ens36
+      type ethernet ip4 192.168.10.1/24
+      ipv4.dns 192.168.10.1}
+\vfill
+
+\onslide<2->
+Then bring up the interface:
+
+\texttt{nmcli con up ethernet-ens36}
+
+\end{frame}
+
+\begin{frame}{Firewall rules}
+  \note{For the purpose of the demo, we'll use \texttt{systemd-firewalld}, but
+    many options are out there, and if you want to do manual rule management,
+    scripting nftables might be good.}
+
+  Our firewall configuration should allow SSH in from the internet, and should
+  forward web traffic to a web server at \texttt{192.168.10.3}.
+
+  For this demo, we'll use \texttt{systemd-firewalld}.
+\end{frame}
+
+\begin{frame}{\texttt{firewalld} zones}
+  \note{The idea with zones is that rules get applied on a zone basis, and that
+    interfaces are added to zones. If a device is multi-homed on networks with
+    different needs, then those interfaces would be placed in different zones.}
+  \begin{figure}
+    \include{./assets/SimpleNetwork}
+    \caption{Simple network with only Internal zones.}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{\texttt{firewalld} zones}
+  \begin{figure}
+    \include{./assets/MultiZoneNetwork}
+    \caption{Multi-firewall, multi-zone network}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{\texttt{firewalld} zones}
+  The router we're setting up looks a lot more like that second diagram.
+
+  \begin{itemize}
+  \item \texttt{external}
+    \begin{itemize}
+    \item WAN-facing, locked down interface.
+    \item Forwards traffic with NAT
+    \end{itemize}
+  \item \texttt{internal}
+    \begin{itemize}
+    \item LAN-facing, has a few more ports open.
+    \item Trusted net.
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Open ports for services}
+  We're going to be serving some services through
+\begin{verbatim}
+firewall-cmd --zone=internal \
+  --add-service=dns,dhcp
+firewall-cmd --zone=external \
+  --add-service=http,https
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile,label={sec:orgc73d656}]{Port forwarding for services}
+  Single-port, one-to-one NAT for a web server behind our firewall
+ \note{This is a form of single-port, one-to-one NAT; with this forwarding, you
+pick a single external port to surface on your public IP address and forward
+it to a specific internal port on either the firewall or another internal
+system. An example of this might be an internal web server:}
+
+\begin{verbatim}
+# This also needs to be run in permanent mode, but
+# the short demo works.
+firewall-cmd --zone=external \
+  --add-forward-port=port=80:\
+      proto=tcp:toport=80:toaddr=172.24.3.2
+firewall-cmd --zone=external \
+   --add-forward-port=port=443:\
+      proto=tcp:toport=443:toaddr=172.24.3.2
+\end{verbatim}
+
+\note{
+  With this port forwarded, our machine at \texttt{172.24.3.2} can now serve HTTP and
+  HTTPS content, and we can proceed to use (for example) Let's Encrypt to
+  secure it. Note that if you want to use a server on a different port to handle
+  getting that certificate, you'll need to add another exemption for it.}
+\end{frame}
+
+\begin{frame}[fragile,label={sec:org6f2d154}]{\texttt{/proc/sys/net} \& \texttt{/etc/sysctl.d}}
+  System configuration is exposed through files in \texttt{/proc/sys/net/...}, such as:
+\begin{verbatim}
+$ cat /proc/sys/net/ipv4/conf/all/log_martians
+0
+# Enable martian logging
+% echo 1 > \
+   /proc/sys/net/ipv4/conf/all/log_martians
+\end{verbatim}
+  \onslide<2->
+  \vfill
+  These configurations can be configured via \texttt{.conf} files in \texttt{/etc/sysctl.d}:
+  \begin{block}{\texttt{/etc/sysctl.d/90-martians.conf}}
+\begin{verbatim}
+net.ipv4.conf.all.log_martians = 1
+\end{verbatim}
+  \end{block}
+    \note{ This filesystem will tell you a lot about the configuration of your network,
     and the files in \texttt{/etc/sysctl.d} will set values at boot which can also be
     dynamically configured; files in this folder are read in sort order, which
     is why files are usually prefixed with a number denoting importance, low to
     high. An example of a line in one of these config files is as follows:
 \#+NAME ipv4-conf-martians-example
 \begin{verbatim}
-net.ipv4.conf.all.log_martians = TRUE
+net.ipv4.conf.all.log_martians = 1
 \end{verbatim}
 
 This line sets \texttt{/proc/sys/net/ipv4/conf/all/log\_martians} to \texttt{TRUE}; that will
 log any and all impossible addresses received by the machine to the kernel
 log. This could be useful if you're seeing a lot of unrouteable traffic on your
-network, for instance.
+network, for instance.}
+\end{frame}
 
-\begin{block}{\texttt{forwarding}}
-To set up forwarding with networkd, you'll want to include the following
-block in a configuration file matching each interface you want to forward
-traffic.
-
-\#+NAME networkd-forwarding
-\begin{verbatim}
-[Network]
-IPForward=yes
-\end{verbatim}
-
-For every interface that's going to be routing traffic, when you check
-\texttt{/proc/sys/net/ipv4/conf/\$IFACE/forwarding} it should show \texttt{1}; for
-non-forwarding interfaces, it'll show a \texttt{0}. (If it shows any non-zero
-value, that's correct.
-\end{block}
-
-\begin{block}{Static IP configuration}
-Declare your address and subnet with the following network block (you only
-need one block with each ehading, but this is useful to differentiate.)
-
-\#+NAME networkd-static-ip
-\begin{verbatim}
-[Network]
-Address=172.24.3.1/24
-\end{verbatim}
-\end{block}
-
-\begin{block}{Dynamic IP configuration (IPv4)}
-Turning on DHCP is similarly straightforward.
-
-\#+NAME netword-dhcp
-\begin{verbatim}
-[Network]
-DHCP=ipv4
-\end{verbatim}
+\begin{frame}{Forwarding traffic}
+  For forwarding, we want \texttt{/proc/sys/net/ipv4/conf/all/forwarding} since we're not building a more esoteric network.
+  \note{Set properties in \texttt{/etc/sysctl.d/20-ip-config.conf} for the
+  interfaces that you want to have traffic routed over them. In this case, we
+  can just use the \texttt{all} selector.}
+  \onslide<2->
+  \vfill
+\begin{block}{\texttt{/etc/sysctl.d/20-ip-config.conf}}
+  \texttt{net.ipv4.conf.all.forwarding = 1}
 \end{block}
 \end{frame}
 
-\begin{frame}[fragile,label={sec:orge0b857e}]{Setting MTU}
- \begin{block}{For the interface directly}
-     We're using 9022 bytes here since that's large enough for various ethernet
-     headers, and still gives us a full jumbo frame.
-\#+NAME networkd-mtu
-\begin{verbatim}
-[Link]
-MTUBytes=9022
-\end{verbatim}
-\end{block}
-
-\begin{block}{For DHCP}
-\end{block}
-\end{frame}
-
-
-\subsection{Setting firewall rules}
-\label{sec:org6569745}
-
-\begin{frame}[label={sec:org2862f08}]{Standard traffic rules}
-\begin{block}{masquerade for IPv4}
-\end{block}
-
-\begin{block}{Restricting access for a given subnet}
-As an extension of the concept of the \ref{sec:org0cc14b8} you can also
-have the firewall deny connections from an IoT device subnet into your main
-subnet or subnets.
-\end{block}
-\end{frame}
-
-\begin{frame}[fragile,label={sec:orgc73d656}]{Port forwarding for services}
- This is a form of single-port, one-to-one NAT; with this forwarding, you
-pick a single external port to surface on your public IP address and forward
-it to a specific internal port on either the firewall or another internal
-system. An example of this might be an internal web server:
-
-\#+NAME firewalld-https-forward
-\begin{verbatim}
-# This also needs to be run in permanent mode, but the short demo works.
-firewall-cmd --add-forward-port=port=80:proto=tcp:toport=80:toaddr=172.24.3.2
-firewall-cmd --add-forward-port=port=443:proto=tcp:toport=443:toaddr=172.24.3.2
-\end{verbatim}
-
-With this port forwarded, our machine at \texttt{172.24.3.2} can now serve HTTP and
-HTTPS content, and we can proceed to use (for example) Let's Encrypt to
-secure it. Note that if you want to use a server on a different port to handle
-getting that certificate, you'll need to add another exemption for it.
+\begin{frame}{DHCP and DNS}
+  We're going to use \texttt{dnsmasq} for two key functions, and we'll use
+  NetworkManager's version to run it.
 \end{frame}
 \end{document}
