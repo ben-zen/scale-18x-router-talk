@@ -1161,39 +1161,43 @@ Then bring up the interface:
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Open ports for services}
-  We're going to be serving some services through
+\begin{frame}[fragile]{Open ports for services}
 \begin{verbatim}
+# Also run these in permanent mode.
 firewall-cmd --zone=internal \
-  --add-service=dns,dhcp
+  --add-service=dns
+firewall-cmd --zone=internal \
+  --add-service=dhcp
 firewall-cmd --zone=external \
-  --add-service=http,https
+  --add-service=http
+firewall-cmd --zone=external \
+  --add-service=https
 \end{verbatim}
+
+  \note{We're going to be serving HTTP(S) through this router, so we're going to
+  enable those ports (named services, in the firewalld parlance.) All of these
+  commands need to be run with the \texttt{--permanent} flag as well.}
 \end{frame}
 
-\begin{frame}[fragile,label={sec:orgc73d656}]{Port forwarding for services}
-  Single-port, one-to-one NAT for a web server behind our firewall
- \note{This is a form of single-port, one-to-one NAT; with this forwarding, you
-pick a single external port to surface on your public IP address and forward
-it to a specific internal port on either the firewall or another internal
-system. An example of this might be an internal web server:}
-
+\begin{frame}[fragile]{Port forwarding for services}
 \begin{verbatim}
-# This also needs to be run in permanent mode, but
+# This also needs to be run in  permanent mode, but
 # the short demo works.
 firewall-cmd --zone=external \
-  --add-forward-port=port=80:\
-      proto=tcp:toport=80:toaddr=172.24.3.2
+  --add-forward-port=port=80: \
+      proto=tcp:toport=80: \
+      toaddr=192.168.10.2
 firewall-cmd --zone=external \
-   --add-forward-port=port=443:\
-      proto=tcp:toport=443:toaddr=172.24.3.2
+   --add-forward-port=port=443: \
+      proto=tcp:toport=443: \
+      toaddr=192.168.10.2
 \end{verbatim}
 
-\note{
-  With this port forwarded, our machine at \texttt{172.24.3.2} can now serve HTTP and
-  HTTPS content, and we can proceed to use (for example) Let's Encrypt to
-  secure it. Note that if you want to use a server on a different port to handle
-  getting that certificate, you'll need to add another exemption for it.}
+\note{This is a form of single-port, one-to-one NAT; with this forwarding, you
+    pick a single external port to surface on your public IP address and forward
+    it to a specific internal port on either the firewall or another internal
+    system. An example of this might be an internal web server:}
+Now our internal web server can reach the internet!
 \end{frame}
 
 \begin{frame}[fragile,label={sec:org6f2d154}]{\texttt{/proc/sys/net} \& \texttt{/etc/sysctl.d}}
@@ -1241,8 +1245,30 @@ network, for instance.}
 \end{block}
 \end{frame}
 
-\begin{frame}{DHCP and DNS}
-  We're going to use \texttt{dnsmasq} for two key functions, and we'll use
-  NetworkManager's version to run it.
+\begin{frame}[fragile]{DHCP and DNS}
+  We're going to use \texttt{dnsmasq} for both our DHCP and our DNS needs!
+  \begin{block}{\texttt{/etc/dnsmasq.d/10-services.conf}}
+\begin{verbatim}
+# Enable responding on an interface
+interface=ens36
+domain=test.lan
+dhcp-range=192.168.10.100,192.168.10.200,12h
+
+# DNS settings (I like OpenNIC)
+server=157.245.161.252
+server=206.186.168.3
+address=/router.test.lan/192.168.10.1
+dhcp-host=anaheim,192.168.10.2
+\end{verbatim}
+  \end{block}
+\end{frame}
+
+\begin{frame}{References}
+  For this talk, and in my personal router-building, I've relied on lots of
+  resources. Here's a few:
+  \begin{itemize}
+  \item dnsmasq man page, online at http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
+  \item Kozierok, Charles M. \textit{The TCP/IP Guide.} https://nostarch.com/tcpip.htm
+  \end{itemize}
 \end{frame}
 \end{document}
