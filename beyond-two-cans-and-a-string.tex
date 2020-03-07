@@ -22,13 +22,13 @@
 \usetheme{Boadilla}
 \usecolortheme[named=teal]{structure}
 \author{Ben Lewis}
-\date{\today}
+\date{8 March 2020}
 \title{Beyond Two Cans and a String}
 \subtitle{A practical guide to building a router}
 \hypersetup{
  pdfauthor={Ben Lewis},
- pdftitle={Beyond Two Cans and a String},
- pdfkeywords={},
+ pdftitle={Beyond Two Cans and a String: A practical guide to building a router},
+ pdfkeywords={networking, firewall, linux},
  pdfsubject={Broaden your homelab experiments to include your network fabric itself, have fun, and learn something along the way as we talk about what choices you can make in building your own home router.},
  pdfcreator={Emacs 26.3 (Org mode 9.1.9)}, 
  pdflang={English}}
@@ -181,12 +181,16 @@ specialized additions.}
 \end{frame}
 
 \begin{frame}[label={sec:org1c4cf14}]{Be easy to manage}
-\begin{block}{Familiar network analysis tools}
+  \begin{itemize}
+  \item<2-> Familiar network analysis tools
+  \item<3-> Interfaces that we use routinely
+  \item<4-> Your choice of package management
+  \end{itemize}
+\note{
 Instead of trying to figure out what strange configuration is present, or
 divine what IP address has gotten assigned, all of your familiar command
 line tools, like or are there, close at
-hand.
-\end{block}
+hand.}
 \end{frame}
 
 \begin{frame}[label={sec:org100ce9b}]{Be a test bed for exploring network ideas}
@@ -237,11 +241,16 @@ try out different tools or technologies
 \end{frame}
 
 \begin{frame}[label={sec:org5a31146}]{CPU}
-Any recent CPU will be powerful enough--here your concerns are cost and
+  You don't need a lot of power here; an Intel Atom is plenty for basic routing needs.
+
+  \vspace{3ex}
+  \onslide<2->
+  I'd always recommend a multicore CPU, however.
+\note{Any recent CPU will be powerful enough--here your concerns are cost and
 heat, mainly. Low-power embedded CPUs are great for low- or no-noise
 operation. I do recommend multi-core, and if you'll be doing more crypto
 on-board (TLS termination, VPN endpoint) your CPU should have SIMD
-instructions.
+instructions.}
 \end{frame}
 
 \begin{frame}[label={sec:org7599d13}]{Storage}
