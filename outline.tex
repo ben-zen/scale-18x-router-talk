@@ -36,12 +36,18 @@
 
 \setbeamertemplate{section page}
 {
-  \vfill
   \begingroup
   \centering
   \usebeamerfont{section title}\textcolor{teal}{\insertsection}\par
   \endgroup
-  \vfill
+}
+
+\setbeamertemplate{subsection page}
+{
+  \begingroup
+  \centering
+  \usebeamerfont{subsection title}\textcolor{teal}{\insertsubsection}\par
+  \endgroup
 }
 
 \begin{document}
@@ -77,9 +83,6 @@ caused me to start looking for other options.
 \label{sec:org769d52d}
 
 \frame{\sectionpage}
-
-\subsection{Limitations of consumer hardware}
-\label{sec:orgbbeeef6}
 
 \begin{frame}[label={sec:org6db040a}]{Random failures}
 Be it ARP table overflows, memory leaks, overheating, or poor antenna
@@ -135,12 +138,6 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
   \end{itemize}
 \end{frame}
 
-\subsection{Reasons to get your hands dirty}
-\label{sec:org4ba3339}
-
-\begin{frame}[label={sec:orgefe5704}]{Sheer edification}
-\end{frame}
-
 \begin{frame}[label={sec:org3f5e855}]{Complex systems encounter complex failures}
 \note{
     Above a certain complexity, systems encounter emergent behaviors: unexpected
@@ -152,7 +149,7 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
   \begin{figure}[htbp]
     \centering
     \includegraphics[height=.6\textheight]{./assets/networking_problems.png}
-    \caption{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right? (XKCD \href{https://xkcd.com/2259}{2259})}
+    \caption{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right? (XKCD \href{https://xkcd.com/2259}{2259}, ``Network Problems''. CC-BY-NC~2.5)}
   \end{figure}
 
 \note{
@@ -166,11 +163,13 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 \subsection{Goals for our router}
 \label{sec:org778996d}
 
+\frame{\subsectionpage}
+
 \begin{frame}[label={sec:org8d79961}]{Be upgradeable}
   \begin{itemize}
-  \item Have expansion ports
-  \item Support future enhancements
-  \item Avoid getting trapped with insufficient hardware
+  \item<2-> Have expansion ports
+  \item<3-> Support future protocols and needs
+  \item<4-> Avoid getting trapped with insufficient hardware
   \end{itemize}
 \note{While inexpensive, consumer routers are often extremely limited; if you look
 at the OpenWRT wiki, there's an entire warning about 4/32 devices, which
@@ -195,28 +194,29 @@ A full operating system on your router offers you lots of opportunities to
 try out different tools or technologies
 
 \begin{itemize}
-  \item Docker containers on your router
+  \item<2-> Docker containers on your router
     \note{I host my Unifi Controller on my router as a Docker container, which avoids
       using a separate physical device}
 
-  \item<2-> Dynamic DNS
-  \item<3-> A little home website
-  \item<4-> Logging or traffic analysis
+  \item<3-> Dynamic DNS
+  \item<4-> A little home website
+  \item<5-> Logging or traffic analysis
 \end{itemize}
 \end{frame}
 
 \section{Selecting hardware}
 \label{sec:org7a3497d}
-\begin{frame}
-  Selecting hardware
+
+\frame{\sectionpage}
+
 \note{
   I'm starting with hardware selection, but really both hardware and software
   have to be considered in tandem, since one will inform the other. This may
   evolve as you build your system, too! Maybe you decide that one approach isn't
   working for you after you've done some basic setup. That's okay. Just remember
   to take notes and log your progress.}
-\end{frame}
-\subsection{Constraints or parameters}
+
+\subsection{Constraints \& parameters}
 \label{sec:org9880863}
 \note{
   Obviously, what capabilities you want to focus on will define how you select
@@ -224,10 +224,16 @@ try out different tools or technologies
   capabilities captured in your router, you'll need more resources in general;
   there are some areas where you can optimize for a specific function.}
 
+\frame{\subsectionpage}
+
 \begin{frame}[label={sec:org4c417ad}]{RAM}
-4GB of RAM is more than enough for a basic firewall; if you want to add more
-services, however, you'll want more. Once you start considering
-virtualization, 16 or 32 might be needed or useful.
+  4GB of RAM is more than enough \ldots
+  \vfill
+  \onslide<2->
+  \ldots but if you want to do exciting projects, you might want even 16 or 32.
+  \note{4GB of RAM is more than enough for a basic firewall; if you want to add more
+    services, however, you'll want more. Once you start considering
+    virtualization, 16 or 32 might be needed or useful.}
 \end{frame}
 
 \begin{frame}[label={sec:org5a31146}]{CPU}
@@ -314,6 +320,8 @@ instructions.
 \subsection{Approaches}
 \label{sec:org1558c43}
 
+\frame{\subsectionpage}
+
 \begin{frame}[label={sec:org3e08734}]{Pre-built}
 \note{Often slightly more expensive, but featureful systems. When looking at
     prebuilt equipment that runs pfSense or other similar firewall-oriented
@@ -381,6 +389,8 @@ instructions.
 \subsection{Considerations for expandability}
 \label{sec:org0ee9e3f}
 
+\frame{\subsectionpage}
+
 \begin{frame}[label={sec:org2c89497}]{Future network standards}
   \begin{itemize}
   \item<2-> Gigabit now, what next?
@@ -409,22 +419,26 @@ instructions.
   \item<3-> TPM for security stuff
     \note{While TPM support is limited generally, you can use it as a source of HWRNG, and
       it can sometimes be used to offload cryptographic computations.}
+  \item<4-> Cellular connection for reliability
+    \note{mSATA cell modems can allow your router to have a failover connection
+      in cases where your main network connection fails-due to a power outage,
+      for instance.}
   \end{itemize}
 \end{frame}
 
 \section{Software stack}
 \label{sec:org2fd137a}
-\begin{frame}
-This is an area where there's lots of hot-headed opinions, and lots of options
-without significant distinction. Decide what matters to you from the axes I'll
-present, and remember that this choice is not permanent. You can try something,
-decide it doesn't work, and change it out! That's okay!
 
-\end{frame}
+\frame{\sectionpage}
+\note{This is an area where there's lots of hot-headed opinions, and lots of options
+  without significant distinction. Decide what matters to you from the axes I'll
+  present, and remember that this choice is not permanent. You can try something,
+  decide it doesn't work, and change it out! That's okay!}
+
 \subsection{Axes of choice}
 \label{sec:org84da425}
 
-\subsectionpage
+\frame{\subsectionpage}
 
 \begin{frame}[label={sec:orgb205e75}]{Interface style}
   \note{
@@ -450,7 +464,7 @@ decide it doesn't work, and change it out! That's okay!
     \item shorewall
     \item \href{https://www.vyos.io/}{VyOS} - both free and paid, this one's complicated. Derivative of Brocade
       Networks' OS.
-    \item raw nftables
+    \item Raw nftables on any recent Linux version
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -475,6 +489,8 @@ or because of hardware support.
 
 \section{Configuring a router}
 \label{sec:org2055775}
+\frame{\sectionpage}
+
 \begin{frame}
   So, we have the parts, how do we set it up?
 \end{frame}
@@ -1002,14 +1018,16 @@ pickle.
 \end{frame}
 
 \begin{frame}{Multiple firewalls}
-  
-  Seen as a "defense in depth" strategy, this takes the medieval walled city
+  \begin{itemize}
+  \item Keep internet-accessible devices separated from ``soft hosts''
+  \end{itemize}
+  \note{Seen as a "defense in depth" strategy, this takes the medieval walled city
   approach to network design. Here, we have potentially two levels of network;
   we might want to keep "soft hosts"--personal computers, other relatively
   unsecured systems--behind a more restricted firewall, while still allowing
   machines operating as servers to have a more porous environment to work
   in--potentially with other untrusted devices there as well (such as IoT
-  devices).
+  devices).}
 \end{frame}
 
 \subsection{Tuning and speed improvements}
@@ -1029,6 +1047,20 @@ pickle.
 \end{frame}
 
 \begin{frame}{Jumbo Frames}
+  Ethernet has some fixed overhead per-packet:
+  \begin{itemize}
+  \item Preamble: 7 octets
+  \item Delimiter: 1 octet
+  \item Destination MAC address: 6 octets
+  \item Source MAC address: 6 octets
+  \item 802.1Q header: 2 octets (Optional!)
+  \item Length: 2 octets
+  \item Frame check sequence (CRC32): 4 octets
+  \item Inter-packet gap: 12 octets
+  \end{itemize}
+  That's 38-40 bytes per frame of overhead, just in layer 2.
+\end{frame}
+\note{
   By massively increasing the payload in an ethernet frame, since each frame's overhead is a fixed amount, for the same
   payload size you're sending 1/6 as many Ethernet headers.
   Ethernet frame overhead: 22B
@@ -1044,7 +1076,6 @@ pickle.
 
   This matters more for above-gigabit speeds, but where configurable jumbo frames can provide significant throughput improvements.
 
-  \note{
     The standard MTU is 1500B; this is fine in a reasonably fast network, but does
     have a not-insignificant amount of overhead. That MTU includes the IP header,
     after all, and especially on an IPv6 network, that can be quite large.
@@ -1053,6 +1084,28 @@ pickle.
     many DHCP clients will simply ignore your stated value and use 1500, so until
     jumbo frames in consumer OSes start showing up more often, we're going to have
     to set this aside.}
+
+\begin{frame}{Jumbo Frames}
+  But Layer 3 gives us some overhead too.
+  \begin{itemize}
+  \item<2-> IPv4 headers: $\geq$20 octets
+  \item<3-> IPv6 headers: $\geq$40 octets
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Jumbo Frames}
+  \begin{itemize}
+  \item 1500 octet MTU overheads:
+    \begin{itemize}
+    \item IPv4: 1480 octet payload, 3.77\% overhead
+    \item IPv6: 1460 octet payload, 5.07\% overhead
+    \end{itemize}
+  \item 9000 octet MTU overheads:
+    \begin{itemize}
+    \item IPv4: 8980 octet payload, 0.64\% overhead
+    \item IPv6: 8960 octet payload, 0.86\% overhead
+    \end{itemize}
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[label={sec:orgc8262cc}]{TCP offload}
@@ -1288,13 +1341,11 @@ dhcp-host=anaheim,192.168.10.2
 [Unit]
 Description=DHCP and DNS caching server.
 After=network.target
-
 [Service]
 ExecStart=/usr/sbin/dnsmasq -k
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5
-
 [Install]
 WantedBy=multi-user.target
 \end{verbatim}
@@ -1303,20 +1354,31 @@ WantedBy=multi-user.target
 
 \begin{frame}{References}
   For this talk, and in my personal router-building, I've relied on lots of
-  resources. Here's a few:
+  resources. Here's a few major ones:
   \begin{itemize}
-  \item dnsmasq man page, online at http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
-  \item Kozierok, Charles M. \textit{The TCP/IP Guide.} https://nostarch.com/tcpip.htm
+  \item dnsmasq man page, online at \url{http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html}
+  \item Kozierok, Charles M. \textit{The TCP/IP Guide.} \url{https://nostarch.com/tcpip.htm}
+  \item \texttt{/proc/sys/net/ipv4} documentation, online at \url{https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt}
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Thanks!}
-  \faTwitter @benjf5\\
-  \faMastodon @ben\_zen@mastodon.social\\
-
+  \begin{itemize}
+  \item[\faTwitter]  @benjf5
+  \item[\faMastodon] @ben\_zen@mastodon.social
+  \item[\faGithub] ben-zen
+  \end{itemize}
+  \vspace{2ex}
   I'll open up the repo for this talk at \url{https://github.com/ben-zen/scale-18x-router-talk}
 
   The most up-to-date version there will be the \LaTeX.
+  
+  \vspace{1ex}
+  \centering
+  \LARGE
+  \faCreativeCommons\:\faCreativeCommonsBy\\
+  \normalsize
+  Except as noted, this talk is \copyright 2020~Ben Lewis, under the \href{http://creativecommons.org/licenses/by/4.0/}{Creative Commons Attribution 4.0 International license}.
 
 \end{frame}
 \end{document}
