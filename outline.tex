@@ -13,7 +13,7 @@
 \usepackage{amsmath}
 \usepackage{textcomp}
 \usepackage{amssymb}
-\usepackage{capt-of}
+\usepackage{caption}
 \usepackage{hyperref}
 \usepackage{comment}
 \usepackage{tikz}
@@ -95,7 +95,7 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=.75\linewidth]{./assets/famous-games.jpg}
-\caption{A router's configuration screen, showing a list of "famous games" including Bittorrent. From \href{https://twitter.com/tjhorner}{@tjhorner} on Twitter.}
+\caption*{A router's configuration screen, showing a list of "famous games" including Bittorrent. From \href{https://twitter.com/tjhorner}{@tjhorner} on Twitter.}
 \end{figure}
 \end{frame}
 
@@ -149,7 +149,7 @@ machine in a DMZ-and minimal firewall options beyond simply providing NAT.
   \begin{figure}[htbp]
     \centering
     \includegraphics[height=.6\textheight]{./assets/networking_problems.png}
-    \caption{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right? (XKCD \href{https://xkcd.com/2259}{2259}, ``Network Problems''. CC-BY-NC~2.5)}
+    \caption*{Take a bunch of complex systems and stick them together\ldots{} it'll be fine, right? (XKCD~\href{https://xkcd.com/2259}{2259}, ``Network Problems''. CC-BY-NC~2.5)}
   \end{figure}
 
 \note{
@@ -362,7 +362,7 @@ instructions.
   \begin{figure}[htbp]
     \centering
     \includegraphics[height=.6\textheight]{./assets/router-cm.jpg}
-    \caption{A custom Supermicro build in a 1U switch-depth chassis}
+    \caption*{A custom Supermicro build in a 1U switch-depth chassis}
   \end{figure}
   \note{Order parts from Supermicro, Tyan, other vendors, and build yourself
     a box! This is a more expensive route, but can be very rewarding. If
@@ -382,7 +382,7 @@ instructions.
     \begin{figure}[htbp]
       \centering
       \includegraphics[height=.6\textheight]{./assets/duwamish-open.jpg}
-      \caption{A HYVE Zeus secondhand server}
+      \caption*{A HYVE Zeus secondhand server}
     \end{figure}
 \end{frame}
 
@@ -1019,7 +1019,8 @@ pickle.
 
 \begin{frame}{Multiple firewalls}
   \begin{itemize}
-  \item Keep internet-accessible devices separated from ``soft hosts''
+  \item<2-> Keep internet-accessible devices separated from ``soft hosts''
+  \item<3-> DMZ is now outside of a firewall
   \end{itemize}
   \note{Seen as a "defense in depth" strategy, this takes the medieval walled city
   approach to network design. Here, we have potentially two levels of network;
@@ -1042,8 +1043,11 @@ pickle.
 \end{frame}
 
 \begin{frame}[label={sec:org13ce3d4}]{Jumbo Frames}
-  When looking at especially above-gigabit networks, you might notice that you're not getting as close to the
-  ripping-fast speeds you expected; instead, your throughput might look \textit{okay}, but not stellar.
+  When looking particularly at speeds above gigabit, you might notice that
+  you're not getting as close to the ripping-fast speeds you expected.
+  \vspace{3ex}
+
+  Your throughput might look \textit{okay}, but not stellar.
 \end{frame}
 
 \begin{frame}{Jumbo Frames}
@@ -1204,14 +1208,14 @@ Then bring up the interface:
     different needs, then those interfaces would be placed in different zones.}
   \begin{figure}
     \include{./assets/SimpleNetwork}
-    \caption{Simple network with only Internal zones.}
+    \caption*{Simple network with only Internal zones.}
   \end{figure}
 \end{frame}
 
 \begin{frame}{\texttt{firewalld} zones}
   \begin{figure}
     \include{./assets/MultiZoneNetwork}
-    \caption{Multi-firewall, multi-zone network}
+    \caption*{Multi-firewall, multi-zone network}
   \end{figure}
 \end{frame}
 
