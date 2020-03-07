@@ -417,22 +417,36 @@ instructions.}
 \end{frame}
 
 \begin{frame}[label={sec:orgfcacbf9}]{Additional different hardware}
-  \begin{itemize}
-  \item<2-> Tensorflow PCIe!
-    \note{
-      You can use Tensorflow in hardware now, relatively cheaply. They're \href{https://www.mouser.com/ProductDetail/Coral/G650-04527-01?qs=sGAEpiMZZMsG1k5vdNM\%252Fcyg9iDc\%25252Bz9JYkOSrS1TKoVU\%253D}{\$35 at
-        Mouser.} What would I do with these? I have no idea yet! But if you wanted to use
-      some tool like greylog to capture logs, you could run an ML model analysis on
-      it, and do so more efficiently than just on your CPU.}
+  \begin{columns}
+    \begin{column}{.45\textwidth}
+      \begin{itemize}
+      \item<2-> Tensorflow PCIe!
+        \note{
+          You can use Tensorflow in hardware now, relatively cheaply. They're \href{https://www.mouser.com/ProductDetail/Coral/G650-04527-01?qs=sGAEpiMZZMsG1k5vdNM\%252Fcyg9iDc\%25252Bz9JYkOSrS1TKoVU\%253D}{\$35 at
+            Mouser.} What would I do with these? I have no idea yet! But if you wanted to use
+          some tool like greylog to capture logs, you could run an ML model analysis on
+          it, and do so more efficiently than just on your CPU.}
 
-  \item<3-> TPM for security stuff
-    \note{While TPM support is limited generally, you can use it as a source of HWRNG, and
-      it can sometimes be used to offload cryptographic computations.}
-  \item<4-> Cellular connection for reliability
-    \note{mSATA cell modems can allow your router to have a failover connection
-      in cases where your main network connection fails-due to a power outage,
-      for instance.}
-  \end{itemize}
+      \item<3-> TPM for security stuff
+        \note{While TPM support is limited generally, you can use it as a source of HWRNG, and
+          it can sometimes be used to offload cryptographic computations.}
+      \item<4-> Cellular connection for reliability
+        \note{mSATA cell modems can allow your router to have a failover connection
+          in cases where your main network connection fails-due to a power outage,
+          for instance.}
+      \end{itemize}
+    \end{column}
+    \begin{column}{.45\textwidth}
+      \onslide<5->
+      \vfill
+      \centering
+      \includegraphics[width=0.8\textwidth]{./assets/excavator.jpg}
+      
+      \small
+      \raggedleft
+      Photo by Fons Heijnsbroek on Unsplash
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \section{Software stack}
